@@ -63,114 +63,97 @@ const AIClient = {
   clearApiKey() {
     localStorage.removeItem(KEYS.API_KEY);
   },
-async call(systemPrompt, userMessage) {
-  const key = this.getApiKey();
-  if (!key) {
-    this.promptForKey();
-    return null;
-  }
 
-  try {
-    const response = await fetch('https://opus.abhibots.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 8146,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userMessage }],
-      }),
-    });
-
-    // Log raw response info for debugging
-    console.log('Response status:', response.status);
-    console.log('Response headers:', [...response.headers.entries()]);
-
-    if (!response.ok) {
-      let errMsg = `API Error ${response.status}`;
-      try {
-        const errBody = await response.json();
-        console.log('Error response body:', errBody);
-        errMsg = errBody.error?.message || errBody.message || errBody.error || errBody.detail || JSON.stringify(errBody);
-      } catch {
-        errMsg = await response.text();
-      }
-      
-      if (response.status === 401) {
-        Toast.show('Invalid API key. Please update it.', 'error');
-        this.promptForKey();
-        return null;
-      }
-      Toast.show(`API Error: ${errMsg}`, 'error');
+  async call(systemPrompt, userMessage) {
+    const key = this.getApiKey();
+    if (!key) {
+      this.promptForKey();
       return null;
     }
 
-    // Parse response and log for debugging
-    const data = await response.json();
-    console.log('API Response:', JSON.stringify(data, null, 2));
+    try {
+      const response = await fetch('https://opus.abhibots.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 8146,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userMessage }],
+        }),
+      });
 
-    // Anthropic format: { content: [{ type: "text", text: "..." }] }
-    if (data.content && Array.isArray(data.content) && data.content[0]?.text) {
-      console.log('Detected: Anthropic format');
-      return data.content[0].text;
-    }
+      // Log response info for debugging
+      console.log('Response status:', response.status);
 
-    // OpenAI format: { choices: [{ message: { content: "..." } }] }
-    if (data.choices && Array.isArray(data.choices) && data.choices[0]?.message?.content) {
-      console.log('Detected: OpenAI format');
-      return data.choices[0].message.content;
-    }
-
-    // Direct text field
-    if (typeof data.text === 'string') { console.log('Detected: text field'); return data.text; }
-    if (typeof data.result === 'string') { console.log('Detected: result field'); return data.result; }
-    if (typeof data.output === 'string') { console.log('Detected: output field'); return data.output; }
-    if (typeof data.message === 'string') { console.log('Detected: message field'); return data.message; }
-    if (typeof data.response === 'string') { console.log('Detected: response field'); return data.response; }
-
-    // Check for nested objects with text
-    if (data.data?.text) { console.log('Detected: data.text'); return data.data.text; }
-    if (data.data?.content) { console.log('Detected: data.content'); return data.data.content; }
-    if (data.result?.text) { console.log('Detected: result.text'); return data.result.text; }
-    if (data.output?.text) { console.log('Detected: output.text'); return data.output.text; }
-    if (data.response?.text) { console.log('Detected: response.text'); return data.response.text; }
-
-    // Check if content is directly in data (single field response)
-    if (typeof data === 'string') { console.log('Detected: raw string'); return data; }
-
-    // Check for any property that looks like content
-    for (const key of Object.keys(data)) {
-      if (typeof data[key] === 'string' && data[key].length > 50) {
-        console.log(`Detected: ${key} field`);
-        return data[key];
+      if (!response.ok) {
+        let errMsg = 'API Error ' + response.status;
+        try {
+          const errBody = await response.json();
+          console.log('Error body:', errBody);
+          errMsg = errBody.error?.message || errBody.message || errBody.error || errBody.detail || JSON.stringify(errBody);
+        } catch {
+          errMsg = await response.text();
+        }
+        
+        if (response.status === 401) {
+          Toast.show('Invalid API key. Please update it.', 'error');
+          this.promptForKey();
+          return null;
+        }
+        Toast.show('API Error: ' + errMsg, 'error');
+        return null;
       }
-    }
 
-    // No valid response found
-    console.error('Unexpected API response structure:', data);
-    Toast.show('Unexpected response format from API', 'error');
-    return null;
- } catch (err) {
-    console.error('AIClient.call error:', err);
-    if (err.message.includes('fetch') || err.message.includes('network') || err.message.includes('Failed to fetch')) {
-      Toast.show('Network error — check your connection.', 'error');
-    } else {
-      Toast.show(`AI Error: ${err.message}`, 'error');
-    }
-    return null;
-  }
-},
-   catch (err) {
-      if (err.message.includes('fetch') || err.message.includes('network') || err.message.includes('Failed to fetch')) {
+      // Parse response
+      const data = await response.json();
+      console.log('Full API Response:', JSON.stringify(data, null, 2));
+
+      // Anthropic format
+      if (data.content && Array.isArray(data.content) && data.content[0] && data.content[0].text) {
+        console.log('Format: Anthropic');
+        return data.content[0].text;
+      }
+
+      // OpenAI format
+      if (data.choices && Array.isArray(data.choices) && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+        console.log('Format: OpenAI');
+        return data.choices[0].message.content;
+      }
+
+      // Direct fields
+      if (typeof data.text === 'string') { console.log('Format: text'); return data.text; }
+      if (typeof data.result === 'string') { console.log('Format: result'); return data.result; }
+      if (typeof data.output === 'string') { console.log('Format: output'); return data.output; }
+      if (typeof data.message === 'string') { console.log('Format: message'); return data.message; }
+      if (typeof data.response === 'string') { console.log('Format: response'); return data.response; }
+
+      // Nested fields
+      if (data.data && (typeof data.data.text === 'string' || typeof data.data.content === 'string')) {
+        console.log('Format: data.*');
+        return data.data.text || data.data.content;
+      }
+      if (data.result && (typeof data.result.text === 'string' || typeof data.result.content === 'string')) {
+        console.log('Format: result.*');
+        return data.result.text || data.result.content;
+      }
+
+      // No valid response
+      console.error('Could not parse API response. Check console for full data.', data);
+      Toast.show('Unexpected response format from API. Check console.', 'error');
+      return null;
+
+    } catch (err) {
+      console.error('AIClient.call error:', err);
+      if (err.message.indexOf('fetch') !== -1 || err.message.indexOf('network') !== -1) {
         Toast.show('Network error — check your connection.', 'error');
       } else {
-        Toast.show(`AI Error: ${err.message}`, 'error');
+        Toast.show('AI Error: ' + err.message, 'error');
       }
-      console.error('AIClient.call error:', err);
       return null;
     }
   },
@@ -182,96 +165,78 @@ async call(systemPrompt, userMessage) {
     const modal = document.createElement('div');
     modal.id = 'api-key-modal';
     modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal-box">
-        <div style="text-align:center;margin-bottom:20px;">
-          <div style="font-size:48px;margin-bottom:12px;">🔑</div>
-          <div class="modal-title">API Key Required</div>
-          <div class="modal-subtitle">
-            Enter your API key to enable AI features. Your key is stored
-            locally in your browser and never sent anywhere except the AI API.
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">API Key</label>
-          <input
-            type="password"
-            id="api-key-input"
-            class="form-input"
-            placeholder="sk-ant-..."
-            autocomplete="off"
-          />
-        </div>
-        <div style="display:flex;gap:10px;">
-          <button class="btn btn-primary btn-full" id="api-key-save">
-            💾 Save & Continue
-          </button>
-          <button class="btn btn-ghost" id="api-key-cancel" style="min-width:80px;">
-            Cancel
-          </button>
-        </div>
-        <p style="margin-top:12px;font-size:0.75rem;color:var(--text-muted);text-align:center;">
-          API endpoint: opus.abhibots.com · Model: claude-sonnet-4-6
-        </p>
-      </div>
-    `;
+    modal.innerHTML = '<div class="modal-box">' +
+      '<div style="text-align:center;margin-bottom:20px;">' +
+        '<div style="font-size:48px;margin-bottom:12px;">🔑</div>' +
+        '<div class="modal-title">API Key Required</div>' +
+        '<div class="modal-subtitle">Enter your API key to enable AI features.</div>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label">API Key</label>' +
+        '<input type="password" id="api-key-input" class="form-input" placeholder="sk-ant-..." autocomplete="off" />' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;">' +
+        '<button class="btn btn-primary btn-full" id="api-key-save">💾 Save & Continue</button>' +
+        '<button class="btn btn-ghost" id="api-key-cancel" style="min-width:80px;">Cancel</button>' +
+      '</div>' +
+      '<p style="margin-top:12px;font-size:0.75rem;color:var(--text-muted);text-align:center;">API endpoint: opus.abhibots.com</p>' +
+    '</div>';
     document.body.appendChild(modal);
 
-    const input = modal.querySelector('#api-key-input');
-    const saveBtn = modal.querySelector('#api-key-save');
-    const cancelBtn = modal.querySelector('#api-key-cancel');
+    var input = modal.querySelector('#api-key-input');
+    var saveBtn = modal.querySelector('#api-key-save');
+    var cancelBtn = modal.querySelector('#api-key-cancel');
 
-    const savedKey = this.getApiKey();
+    var savedKey = this.getApiKey();
     if (savedKey) { input.value = savedKey; }
 
-    saveBtn.addEventListener('click', () => {
-      const val = input.value.trim();
+    saveBtn.addEventListener('click', function() {
+      var val = input.value.trim();
       if (!val) { Toast.show('Please enter a valid API key', 'error'); return; }
-      this.saveApiKey(val);
+      AIClient.saveApiKey(val);
       modal.classList.add('hidden');
       Toast.show('API key saved!', 'success');
       updateApiStatusIndicator();
     });
 
-    cancelBtn.addEventListener('click', () => {
+    cancelBtn.addEventListener('click', function() {
       modal.classList.add('hidden');
     });
 
-    input.addEventListener('keydown', (e) => {
+    input.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') saveBtn.click();
     });
   },
 };
 
 /* ── Notes Chunking ── */
-function getRelevantNoteChunk(notesText, topic, maxChars = 24000) {
-  const prefix = `The following are the student's personal study notes. ` +
-    `Base ALL responses strictly and exclusively on this content. ` +
-    `Do not add external knowledge.\n\n`;
+function getRelevantNoteChunk(notesText, topic, maxChars) {
+  maxChars = maxChars || 24000;
+  var prefix = 'The following are the student\'s personal study notes. Base ALL responses strictly and exclusively on this content. Do not add external knowledge.\n\n';
 
   if (!notesText || notesText.trim().length === 0) {
     return prefix + '[No notes uploaded yet. Please upload your .txt notes files in the Library section.]';
   }
 
-  const topicWords = topic.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-  const paragraphs = notesText.split(/\n{2,}/);
+  var topicWords = topic.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 2; });
+  var paragraphs = notesText.split(/\n{2,}/);
 
-  const scored = paragraphs.map(p => {
-    const lower = p.toLowerCase();
-    let score = 0;
-    topicWords.forEach(word => {
-      const matches = (lower.match(new RegExp(word, 'g')) || []).length;
-      score += matches;
+  var scored = paragraphs.map(function(p) {
+    var lower = p.toLowerCase();
+    var score = 0;
+    topicWords.forEach(function(word) {
+      var matches = lower.match(new RegExp(word, 'g'));
+      score += matches ? matches.length : 0;
     });
-    return { text: p, score };
+    return { text: p, score: score };
   });
 
-  scored.sort((a, b) => b.score - a.score);
+  scored.sort(function(a, b) { return b.score - a.score; });
 
-  let result = '';
-  for (const item of scored) {
-    if ((result + item.text).length > maxChars) break;
-    result += item.text + '\n\n';
+  var result = '';
+  for (var i = 0; i < scored.length; i++) {
+    if ((result + scored[i].text).length > maxChars) break;
+    result += scored[i].text + '\n\n';
   }
 
   if (!result.trim()) {
@@ -283,190 +248,177 @@ function getRelevantNoteChunk(notesText, topic, maxChars = 24000) {
 
 /* ── Theme Manager ── */
 const ThemeManager = {
-  init() {
-    const saved = Storage.get(KEYS.THEME, 'dark');
+  init: function() {
+    var saved = Storage.get(KEYS.THEME, 'dark');
     this.apply(saved);
   },
-  apply(theme) {
+  apply: function(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     Storage.set(KEYS.THEME, theme);
-    const btn = document.getElementById('theme-toggle');
+    var btn = document.getElementById('theme-toggle');
     if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
   },
-  toggle() {
-    const current = Storage.get(KEYS.THEME, 'dark');
+  toggle: function() {
+    var current = Storage.get(KEYS.THEME, 'dark');
     this.apply(current === 'dark' ? 'light' : 'dark');
-  },
+  }
 };
 
 /* ── Toast Notifications ── */
 const Toast = {
   container: null,
-
-  init() {
+  init: function() {
     if (!this.container) {
       this.container = document.createElement('div');
       this.container.className = 'toast-container';
       document.body.appendChild(this.container);
     }
   },
-
-  show(message, type = 'info', duration = 3500) {
+  show: function(message, type, duration) {
+    type = type || 'info';
+    duration = duration || 3500;
     this.init();
-    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `
-      <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
-      <span class="toast-msg">${message}</span>
-    `;
+    var icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+    var toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    toast.innerHTML = '<span class="toast-icon">' + (icons[type] || 'ℹ️') + '</span><span class="toast-msg">' + message + '</span>';
     this.container.appendChild(toast);
-    setTimeout(() => {
+    setTimeout(function() {
       toast.style.opacity = '0';
       toast.style.transform = 'translateX(20px)';
       toast.style.transition = 'all 0.3s ease';
-      setTimeout(() => toast.remove(), 300);
+      setTimeout(function() { toast.remove(); }, 300);
     }, duration);
-  },
+  }
 };
 
 /* ── Navigation Builder ── */
 function buildNavigation() {
-  const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+  var currentPage = window.location.pathname.split('/').pop() || 'index.html';
 
-  // ── Sidebar ──
-  const sidebarEl = document.getElementById('sidebar');
+  // Sidebar
+  var sidebarEl = document.getElementById('sidebar');
   if (sidebarEl) {
-    const isCollapsed = Storage.get('medhub_sidebar_collapsed', false);
+    var isCollapsed = Storage.get('medhub_sidebar_collapsed', false);
     if (isCollapsed) sidebarEl.classList.add('collapsed');
 
-    const mainContent = document.getElementById('main-content');
+    var mainContent = document.getElementById('main-content');
     if (mainContent && isCollapsed) mainContent.classList.add('sidebar-collapsed');
 
-    sidebarEl.innerHTML = `
-      <div class="sidebar-header">
-        <div class="sidebar-logo">🩺</div>
-        <div class="sidebar-title">MedStudy Hub</div>
-        <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">
-          ${isCollapsed ? '›' : '‹'}
-        </button>
-      </div>
-      <nav class="sidebar-nav">
-        ${NAV_ITEMS.map(item => `
-          <a href="${item.href}"
-             class="nav-item ${currentPage === item.href ? 'active' : ''}"
-             title="${item.label}">
-            <span class="nav-icon">${item.icon}</span>
-            <span class="nav-label">${item.label}</span>
-          </a>
-        `).join('')}
-      </nav>
-      <div class="sidebar-footer">
-        <button class="nav-item" id="theme-toggle" style="width:100%;background:none;"
-                title="Toggle theme">
-          ${Storage.get(KEYS.THEME, 'dark') === 'dark' ? '☀️' : '🌙'}
-          <span class="nav-label">Toggle Theme</span>
-        </button>
-        <div id="api-status-sidebar" class="api-status ${AIClient.getApiKey() ? 'connected' : 'disconnected'}"
-             onclick="AIClient.promptForKey()"
-             style="margin-top:8px;width:100%;justify-content:center;">
-          <span class="status-dot"></span>
-          <span class="nav-label">${AIClient.getApiKey() ? 'AI Connected' : 'Set API Key'}</span>
-        </div>
-      </div>
-    `;
+    var navHTML = '<div class="sidebar-header">' +
+      '<div class="sidebar-logo">🩺</div>' +
+      '<div class="sidebar-title">MedStudy Hub</div>' +
+      '<button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">' + (isCollapsed ? '›' : '‹') + '</button>' +
+    '</div>' +
+    '<nav class="sidebar-nav">';
 
-    const toggleBtn = document.getElementById('sidebar-toggle');
+    for (var i = 0; i < NAV_ITEMS.length; i++) {
+      var item = NAV_ITEMS[i];
+      var active = currentPage === item.href ? ' active' : '';
+      navHTML += '<a href="' + item.href + '" class="nav-item' + active + '" title="' + item.label + '">' +
+        '<span class="nav-icon">' + item.icon + '</span>' +
+        '<span class="nav-label">' + item.label + '</span>' +
+      '</a>';
+    }
+
+    navHTML += '</nav><div class="sidebar-footer">' +
+      '<button class="nav-item" id="theme-toggle" style="width:100%;background:none;" title="Toggle theme">' +
+        (Storage.get(KEYS.THEME, 'dark') === 'dark' ? '☀️' : '🌙') +
+        '<span class="nav-label">Toggle Theme</span>' +
+      '</button>' +
+      '<div id="api-status-sidebar" class="api-status ' + (AIClient.getApiKey() ? 'connected' : 'disconnected') + '" ' +
+           'onclick="AIClient.promptForKey()" style="margin-top:8px;width:100%;justify-content:center;">' +
+        '<span class="status-dot"></span>' +
+        '<span class="nav-label">' + (AIClient.getApiKey() ? 'AI Connected' : 'Set API Key') + '</span>' +
+      '</div>' +
+    '</div>';
+
+    sidebarEl.innerHTML = navHTML;
+
+    var toggleBtn = document.getElementById('sidebar-toggle');
     if (toggleBtn) {
-      toggleBtn.addEventListener('click', () => {
-        const collapsed = sidebarEl.classList.toggle('collapsed');
+      toggleBtn.addEventListener('click', function() {
+        var collapsed = sidebarEl.classList.toggle('collapsed');
         if (mainContent) mainContent.classList.toggle('sidebar-collapsed', collapsed);
         Storage.set('medhub_sidebar_collapsed', collapsed);
         toggleBtn.textContent = collapsed ? '›' : '‹';
       });
     }
 
-    const themeBtn = document.getElementById('theme-toggle');
+    var themeBtn = document.getElementById('theme-toggle');
     if (themeBtn) {
-      themeBtn.addEventListener('click', () => ThemeManager.toggle());
+      themeBtn.addEventListener('click', function() { ThemeManager.toggle(); });
     }
   }
 
-  // ── Bottom Nav (Mobile) ──
-  const bottomNavEl = document.getElementById('bottom-nav');
+  // Bottom Nav (Mobile)
+  var bottomNavEl = document.getElementById('bottom-nav');
   if (bottomNavEl) {
-    const visibleItems = NAV_ITEMS.slice(0, 5);
-    bottomNavEl.innerHTML = `
-      <div class="bottom-nav-items">
-        ${visibleItems.map(item => `
-          <a href="${item.href}"
-             class="bottom-nav-item ${currentPage === item.href ? 'active' : ''}"
-             title="${item.label}">
-            <span class="nav-icon">${item.icon}</span>
-            <span>${item.label}</span>
-          </a>
-        `).join('')}
-        <a href="#more-menu" class="bottom-nav-item" id="more-btn"
-           onclick="toggleMoreMenu(event)">
-          <span class="nav-icon">⋯</span>
-          <span>More</span>
-        </a>
-      </div>
-      <div id="more-menu" class="hidden" style="
-        position:fixed;bottom:var(--bottom-nav-height);left:0;right:0;
-        background:var(--bg-card);border-top:1px solid var(--border-subtle);
-        padding:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
-        z-index:200;
-      ">
-        ${NAV_ITEMS.slice(5).map(item => `
-          <a href="${item.href}"
-             class="bottom-nav-item ${currentPage === item.href ? 'active' : ''}">
-            <span class="nav-icon">${item.icon}</span>
-            <span>${item.label}</span>
-          </a>
-        `).join('')}
-        <button class="bottom-nav-item" onclick="ThemeManager.toggle()">
-          <span class="nav-icon" id="theme-toggle">
-            ${Storage.get(KEYS.THEME, 'dark') === 'dark' ? '☀️' : '🌙'}
-          </span>
-          <span>Theme</span>
-        </button>
-      </div>
-    `;
+    var visibleItems = NAV_ITEMS.slice(0, 5);
+    var bottomHTML = '<div class="bottom-nav-items">';
+
+    for (var j = 0; j < visibleItems.length; j++) {
+      var bitem = visibleItems[j];
+      var bActive = currentPage === bitem.href ? ' active' : '';
+      bottomHTML += '<a href="' + bitem.href + '" class="bottom-nav-item' + bActive + '" title="' + bitem.label + '">' +
+        '<span class="nav-icon">' + bitem.icon + '</span>' +
+        '<span>' + bitem.label + '</span>' +
+      '</a>';
+    }
+
+    bottomHTML += '<a href="#more-menu" class="bottom-nav-item" id="more-btn" onclick="toggleMoreMenu(event)">' +
+      '<span class="nav-icon">⋯</span><span>More</span></a></div>' +
+      '<div id="more-menu" class="hidden" style="position:fixed;bottom:var(--bottom-nav-height);left:0;right:0;' +
+        'background:var(--bg-card);border-top:1px solid var(--border-subtle);padding:16px;' +
+        'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;z-index:200;">';
+
+    for (var k = 5; k < NAV_ITEMS.length; k++) {
+      var mitem = NAV_ITEMS[k];
+      var mActive = currentPage === mitem.href ? ' active' : '';
+      bottomHTML += '<a href="' + mitem.href + '" class="bottom-nav-item' + mActive + '">' +
+        '<span class="nav-icon">' + mitem.icon + '</span>' +
+        '<span>' + mitem.label + '</span>' +
+      '</a>';
+    }
+
+    bottomHTML += '<button class="bottom-nav-item" onclick="ThemeManager.toggle()">' +
+      '<span class="nav-icon">☀️</span><span>Theme</span></button></div>';
+
+    bottomNavEl.innerHTML = bottomHTML;
   }
 }
 
+/* ── Toggle More Menu ── */
 function toggleMoreMenu(e) {
-  e.preventDefault();
-  const menu = document.getElementById('more-menu');
+  if (e) e.preventDefault();
+  var menu = document.getElementById('more-menu');
   if (menu) menu.classList.toggle('hidden');
 }
 
+/* ── Update API Status ── */
 function updateApiStatusIndicator() {
-  const indicators = document.querySelectorAll('#api-status-sidebar');
-  const hasKey = !!AIClient.getApiKey();
-  indicators.forEach(el => {
-    el.className = `api-status ${hasKey ? 'connected' : 'disconnected'}`;
-    const label = el.querySelector('.nav-label');
+  var indicators = document.querySelectorAll('#api-status-sidebar');
+  var hasKey = !!AIClient.getApiKey();
+  for (var i = 0; i < indicators.length; i++) {
+    indicators[i].className = 'api-status ' + (hasKey ? 'connected' : 'disconnected');
+    var label = indicators[i].querySelector('.nav-label');
     if (label) label.textContent = hasKey ? 'AI Connected' : 'Set API Key';
-  });
+  }
 }
 
 /* ── Streak Manager ── */
 const StreakManager = {
-  get() {
+  get: function() {
     return Storage.get(KEYS.STREAK, { count: 0, lastDate: null });
   },
-
-  update() {
-    const streak = this.get();
-    const today = new Date().toISOString().split('T')[0];
-
+  update: function() {
+    var streak = this.get();
+    var today = new Date().toISOString().split('T')[0];
     if (streak.lastDate === today) return streak;
 
-    const yesterday = new Date();
+    var yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yStr = yesterday.toISOString().split('T')[0];
+    var yStr = yesterday.toISOString().split('T')[0];
 
     if (streak.lastDate === yStr) {
       streak.count += 1;
@@ -478,79 +430,74 @@ const StreakManager = {
     Storage.set(KEYS.STREAK, streak);
     return streak;
   },
-
-  reset() {
+  reset: function() {
     Storage.set(KEYS.STREAK, { count: 0, lastDate: null });
-  },
+  }
 };
 
 /* ── Study Stats ── */
 const StudyStats = {
-  get() {
+  get: function() {
     return Storage.get(KEYS.STUDY_STATS, {
       totalAnswered: 0,
       totalCorrect: 0,
       sessionsCount: 0,
-      notesGenerated: 0,
+      notesGenerated: 0
     });
   },
-
-  recordAnswer(correct) {
-    const stats = this.get();
+  recordAnswer: function(correct) {
+    var stats = this.get();
     stats.totalAnswered += 1;
     if (correct) stats.totalCorrect += 1;
     Storage.set(KEYS.STUDY_STATS, stats);
   },
-
-  recordSession() {
-    const stats = this.get();
+  recordSession: function() {
+    var stats = this.get();
     stats.sessionsCount += 1;
     Storage.set(KEYS.STUDY_STATS, stats);
   },
-
-  recordNoteGenerated() {
-    const stats = this.get();
+  recordNoteGenerated: function() {
+    var stats = this.get();
     stats.notesGenerated = (stats.notesGenerated || 0) + 1;
     Storage.set(KEYS.STUDY_STATS, stats);
   },
-
-  accuracy() {
-    const stats = this.get();
+  accuracy: function() {
+    var stats = this.get();
     if (stats.totalAnswered === 0) return 0;
     return Math.round((stats.totalCorrect / stats.totalAnswered) * 100);
-  },
+  }
 };
 
 /* ── Date Helpers ── */
 const DateUtils = {
-  today() {
+  today: function() {
     return new Date().toISOString().split('T')[0];
   },
-  format(dateStr, opts = {}) {
-    const d = new Date(dateStr);
+  format: function(dateStr, opts) {
+    opts = opts || {};
+    var d = new Date(dateStr);
     return d.toLocaleDateString('en-US', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-      ...opts,
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
   },
-  daysUntil(dateStr) {
+  daysUntil: function(dateStr) {
     if (!dateStr) return null;
-    const target = new Date(dateStr);
-    const now = new Date();
-    const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+    var target = new Date(dateStr);
+    var now = new Date();
+    var diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
     return diff;
   },
-  addDays(dateStr, n) {
-    const d = new Date(dateStr);
+  addDays: function(dateStr, n) {
+    var d = new Date(dateStr);
     d.setDate(d.getDate() + n);
     return d.toISOString().split('T')[0];
-  },
+  }
 };
 
 /* ── UUID Generator ── */
 function generateId() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = (Math.random() * 16) | 0;
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = (Math.random() * 16) | 0;
     return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
   });
 }
@@ -570,7 +517,7 @@ function renderMarkdown(text) {
     .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
     .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
     .replace(/\n{2,}/g, '</p><p>')
-    .replace(/^(?!<[h|u|b|p|l])(.+)$/gm, (m) => m.trim() ? m : '')
+    .replace(/^(?!<[h|u|b|p|l])(.+)$/gm, function(m) { return m.trim() ? m : ''; })
     .replace(/\n/g, '<br>');
 }
 
@@ -581,70 +528,81 @@ const DB = {
   DB_VERSION: 1,
   STORE: 'notes_files',
 
-  async open() {
-    if (this.db) return this.db;
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(this.DB_NAME, this.DB_VERSION);
-      req.onupgradeneeded = (e) => {
-        const db = e.target.result;
-        if (!db.objectStoreNames.contains(this.STORE)) {
-          const store = db.createObjectStore(this.STORE, {
+  open: function() {
+    var self = this;
+    if (self.db) return Promise.resolve(self.db);
+    return new Promise(function(resolve, reject) {
+      var req = indexedDB.open(self.DB_NAME, self.DB_VERSION);
+      req.onupgradeneeded = function(e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains(self.STORE)) {
+          var store = db.createObjectStore(self.STORE, {
             keyPath: 'id',
-            autoIncrement: true,
+            autoIncrement: true
           });
           store.createIndex('filename', 'filename', { unique: false });
           store.createIndex('uploadDate', 'uploadDate', { unique: false });
         }
       };
-      req.onsuccess = (e) => { this.db = e.target.result; resolve(this.db); };
-      req.onerror = () => reject(req.error);
+      req.onsuccess = function(e) { self.db = e.target.result; resolve(self.db); };
+      req.onerror = function() { reject(req.error); };
     });
   },
 
-  async getAllFiles() {
-    const db = await this.open();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.STORE, 'readonly');
-      const req = tx.objectStore(this.STORE).getAll();
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
+  getAllFiles: function() {
+    var self = this;
+    return this.open().then(function(db) {
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction(self.STORE, 'readonly');
+        var req = tx.objectStore(self.STORE).getAll();
+        req.onsuccess = function() { resolve(req.result); };
+        req.onerror = function() { reject(req.error); };
+      });
     });
   },
 
-  async addFile(fileObj) {
-    const db = await this.open();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.STORE, 'readwrite');
-      const req = tx.objectStore(this.STORE).add(fileObj);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
+  addFile: function(fileObj) {
+    var self = this;
+    return this.open().then(function(db) {
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction(self.STORE, 'readwrite');
+        var req = tx.objectStore(self.STORE).add(fileObj);
+        req.onsuccess = function() { resolve(req.result); };
+        req.onerror = function() { reject(req.error); };
+      });
     });
   },
 
-  async deleteFile(id) {
-    const db = await this.open();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.STORE, 'readwrite');
-      const req = tx.objectStore(this.STORE).delete(id);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
+  deleteFile: function(id) {
+    var self = this;
+    return this.open().then(function(db) {
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction(self.STORE, 'readwrite');
+        var req = tx.objectStore(self.STORE).delete(id);
+        req.onsuccess = function() { resolve(); };
+        req.onerror = function() { reject(req.error); };
+      });
     });
   },
 
-  async clearAll() {
-    const db = await this.open();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.STORE, 'readwrite');
-      const req = tx.objectStore(this.STORE).clear();
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
+  clearAll: function() {
+    var self = this;
+    return this.open().then(function(db) {
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction(self.STORE, 'readwrite');
+        var req = tx.objectStore(self.STORE).clear();
+        req.onsuccess = function() { resolve(); };
+        req.onerror = function() { reject(req.error); };
+      });
     });
   },
 
-  async getAllNotesText() {
-    const files = await this.getAllFiles();
-    return files.map(f => f.content).join('\n\n---\n\n');
-  },
+  getAllNotesText: function() {
+    var self = this;
+    return this.getAllFiles().then(function(files) {
+      return files.map(function(f) { return f.content; }).join('\n\n---\n\n');
+    });
+  }
 };
 
 /* ── Medical Topic Auto-Tagger ── */
@@ -659,12 +617,12 @@ const MEDICAL_KEYWORDS = [
   'heart', 'lung', 'liver', 'kidney', 'brain', 'bone', 'blood', 'cell',
   'receptor', 'enzyme', 'hormone', 'protein', 'dna', 'rna', 'antibody',
   'diagnosis', 'treatment', 'prognosis', 'etiology', 'pathogenesis',
-  'neet', 'mbbs', 'usmle', 'clinical', 'case study',
+  'neet', 'mbbs', 'usmle', 'clinical', 'case study'
 ];
 
 function autoTagTopics(text) {
-  const lower = text.toLowerCase();
-  return MEDICAL_KEYWORDS.filter(kw => lower.includes(kw)).slice(0, 8);
+  var lower = text.toLowerCase();
+  return MEDICAL_KEYWORDS.filter(function(kw) { return lower.indexOf(kw) !== -1; }).slice(0, 8);
 }
 
 /* ── App Initialization ── */
@@ -673,13 +631,11 @@ function initApp() {
   buildNavigation();
   Toast.init();
 
-  // Update last page
   Storage.set(KEYS.LAST_PAGE, window.location.pathname.split('/').pop());
 
-  // Close more menu on outside click
-  document.addEventListener('click', (e) => {
-    const menu = document.getElementById('more-menu');
-    const moreBtn = document.getElementById('more-btn');
+  document.addEventListener('click', function(e) {
+    var menu = document.getElementById('more-menu');
+    var moreBtn = document.getElementById('more-btn');
     if (menu && !menu.classList.contains('hidden') &&
         !menu.contains(e.target) && e.target !== moreBtn) {
       menu.classList.add('hidden');
@@ -687,7 +643,6 @@ function initApp() {
   });
 }
 
-// Auto-init on DOM ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);
 } else {
