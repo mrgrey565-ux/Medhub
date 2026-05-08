@@ -88,22 +88,49 @@ const AIClient = {
       });
 
       if (!response.ok) {
-        const errBody = await response.text();
+        let errMsg = `API Error ${response.status}`;
+        try {
+          const errBody = await response.json();
+          // Try to extract meaningful error message
+          errMsg = errBody.error?.message || errBody.message || errBody.error || errBody.detail || JSON.stringify(errBody);
+        } catch {
+          errMsg = await response.text();
+        }
+        
         if (response.status === 401) {
           Toast.show('Invalid API key. Please update it.', 'error');
           this.promptForKey();
           return null;
         }
-        throw new Error(`API Error ${response.status}: ${errBody}`);
+        Toast.show(`API Error: ${errMsg}`, 'error');
+        return null;
       }
 
+      // Parse response with multiple format support
       const data = await response.json();
-      if (data.content && data.content[0] && data.content[0].text) {
+
+      // Anthropic format: { content: [{ type: "text", text: "..." }] }
+      if (data.content && Array.isArray(data.content) && data.content[0]?.text) {
         return data.content[0].text;
       }
-      throw new Error('Unexpected API response format');
+
+      // OpenAI format: { choices: [{ message: { content: "..." } }] }
+      if (data.choices && Array.isArray(data.choices) && data.choices[0]?.message?.content) {
+        return data.choices[0].message.content;
+      }
+
+      // Direct text field
+      if (typeof data.text === 'string') return data.text;
+      if (typeof data.result === 'string') return data.result;
+      if (typeof data.output === 'string') return data.output;
+
+      // No valid response found
+      console.error('Unexpected API response structure:', data);
+      Toast.show('Unexpected response format from API', 'error');
+      return null;
+
     } catch (err) {
-      if (err.message.includes('fetch')) {
+      if (err.message.includes('fetch') || err.message.includes('network') || err.message.includes('Failed to fetch')) {
         Toast.show('Network error — check your connection.', 'error');
       } else {
         Toast.show(`AI Error: ${err.message}`, 'error');
