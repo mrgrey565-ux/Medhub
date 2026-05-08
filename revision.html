@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedStudy Hub — Spaced Revision</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <div class="sidebar" id="sidebar"></div>
+
+  <main class="main-content" id="main-content">
+    <div class="content-wrapper">
+
+      <div class="page-header">
+        <div class="page-title">🔁 Spaced Revision</div>
+        <div class="page-subtitle">FSRS-lite spaced repetition — review at optimal intervals</div>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="stats-row" style="margin-bottom:24px;" id="srs-stats-row">
+        <div class="stat-card">
+          <div class="stat-value" id="srs-due" style="font-size:var(--text-3xl);">0</div>
+          <div class="stat-label">Due Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="srs-total" style="font-size:var(--text-3xl);">0</div>
+          <div class="stat-label">Total Cards</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="srs-weak" style="font-size:var(--text-3xl);color:var(--error);">0</div>
+          <div class="stat-label">Weak Points</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="srs-reviewed-today" style="font-size:var(--text-3xl);">0</div>
+          <div class="stat-label">Reviewed Today</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 280px;gap:24px;align-items:start;" id="revision-layout">
+
+        <!-- Left: Review Area -->
+        <div>
+          <!-- Due Today Banner -->
+          <div id="due-banner" class="card mb-4" style="display:none;background:linear-gradient(135deg,rgba(245,158,11,0.1),rgba(239,68,68,0.05));border-color:rgba(245,158,11,0.3);">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <div style="font-weight:800;font-size:var(--text-lg);">⚠️ <span id="due-count-text">0</span> cards due!</div>
+                <div style="font-size:var(--text-sm);color:var(--text-muted);">Review now to keep your retention high</div>
+              </div>
+              <button class="btn btn-primary" id="start-review-btn">Start Review</button>
+            </div>
+          </div>
+
+          <!-- Review Card -->
+          <div id="review-area" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <div class="question-number" id="review-progress">Card 1 of 5</div>
+              <button class="btn btn-ghost btn-sm" id="end-review-btn">End Review</button>
+            </div>
+
+            <!-- Front -->
+            <div class="srs-card" id="card-front">
+              <div style="font-size:var(--text-xs);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;" id="card-topic-label">Topic</div>
+              <div class="question-text" id="card-question" style="text-align:center;font-size:var(--text-lg);"></div>
+              <button class="btn btn-primary btn-lg" id="reveal-btn" style="margin-top:24px;">
+                👁 Reveal Answer
+              </button>
+            </div>
+
+            <!-- Back (Answer) -->
+            <div class="srs-card" id="card-back" style="display:none;">
+              <div style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:8px;" id="back-topic-label">Topic</div>
+              <div class="question-text" id="back-question" style="font-size:var(--text-base);text-align:left;margin-bottom:16px;"></div>
+
+              <div id="back-options" style="margin-bottom:16px;"></div>
+
+              <div style="background:var(--bg-elevated);border-left:3px solid var(--success);padding:12px;border-radius:0 var(--border-radius-sm) var(--border-radius-sm) 0;margin-bottom:16px;">
+                <div style="font-size:var(--text-xs);font-weight:700;color:var(--success);margin-bottom:4px;text-transform:uppercase;">✅ Correct Answer</div>
+                <div id="correct-answer-text" style="font-weight:700;color:var(--text-primary);"></div>
+              </div>
+
+              <div class="explanation-box" style="margin-bottom:16px;">
+                <h4>📖 Explanation</h4>
+                <p id="card-explanation"></p>
+              </div>
+
+              <div id="ai-explain-section" style="display:none;">
+                <div style="font-size:var(--text-xs);font-weight:700;color:var(--accent-secondary);margin-bottom:6px;text-transform:uppercase;">🤖 AI Re-Explanation (from your notes)</div>
+                <p id="ai-explain-text" style="font-size:var(--text-sm);color:var(--text-secondary);font-style:italic;"></p>
+              </div>
+
+              <button class="btn btn-ghost btn-sm" id="ai-explain-card-btn" style="margin-bottom:16px;">
+                🤖 Explain This Again (AI)
+              </button>
+
+              <div style="font-weight:700;text-align:center;margin-bottom:12px;color:var(--text-secondary);">
+                How well did you know this?
+              </div>
+              <div class="rating-buttons">
+                <button class="rating-btn again" onclick="rateCard(0)">
+                  🔴 Again<br><span style="font-size:10px;opacity:0.7;">1 day</span>
+                </button>
+                <button class="rating-btn hard" onclick="rateCard(1)">
+                  🟠 Hard<br><span style="font-size:10px;opacity:0.7;">3 days</span>
+                </button>
+                <button class="rating-btn good" onclick="rateCard(2)">
+                  🔵 Good<br><span style="font-size:10px;opacity:0.7;">7 days</span>
+                </button>
+                <button class="rating-btn easy" onclick="rateCard(3)">
+                  🟢 Easy<br><span style="font-size:10px;opacity:0.7;">14 days</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Review Complete -->
+          <div id="review-complete" style="display:none;" class="card text-center">
+            <div style="font-size:56px;margin-bottom:16px;">🎉</div>
+            <div class="card-title" style="margin-bottom:8px;">Review Session Complete!</div>
+            <div style="color:var(--text-muted);margin-bottom:24px;" id="review-complete-msg"></div>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+              <button class="btn btn-primary" id="continue-review-btn">Continue →</button>
+              <a href="study.html" class="btn btn-secondary">📚 Study Mode</a>
+            </div>
+          </div>
+
+          <!-- Empty: No Due Cards -->
+          <div id="no-due-state" class="empty-state" style="display:none;">
+            <div class="empty-state-icon">✅</div>
+            <div class="empty-state-title">All caught up!</div>
+            <div class="empty-state-desc">No cards due right now. Come back later or add more cards from Study Mode.</div>
+            <a href="study.html" class="btn btn-primary" style="margin-top:8px;">Go Study</a>
+          </div>
+
+          <div id="initial-empty" class="empty-state">
+            <div class="empty-state-icon">🔁</div>
+            <div class="empty-state-title">No revision cards yet</div>
+            <div class="empty-state-desc">Flag questions in Study Mode or take an Exam — weak areas are auto-added here.</div>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px;">
+              <a href="study.html" class="btn btn-primary">📚 Study Mode</a>
+              <a href="exam.html" class="btn btn-secondary">📝 Take Exam</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Sidebar -->
+        <div>
+          <!-- 7-Day Graph -->
+          <div class="card mb-4" style="position:sticky;top:20px;">
+            <div class="card-title" style="margin-bottom:16px;">📈 7-Day Review Activity</div>
+            <div class="bar-chart" id="review-graph"></div>
+            <div class="divider"></div>
+
+            <!-- Weak Points -->
+            <div class="card-title" style="margin-bottom:12px;">⚠️ Weak Points</div>
+            <div id="weak-points-list" style="max-height:300px;overflow-y:auto;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav" id="bottom-nav"></nav>
+
+<script src="js/core.js"></script>
+<script src="js/revision-engine.js"></script>
+<script>
+let dueCards = [];
+let currentCardIdx = 0;
+let currentCard = null;
+let reviewedCount = 0;
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadRevisionData();
+
+  document.getElementById('start-review-btn').addEventListener('click', startReview);
+  document.getElementById('end-review-btn').addEventListener('click', endReview);
+  document.getElementById('reveal-btn').addEventListener('click', revealCard);
+  document.getElementById('ai-explain-card-btn').addEventListener('click', fetchAIExplanation);
+  document.getElementById('continue-review-btn').addEventListener('click', () => {
+    loadRevisionData();
+  });
+
+  // Mobile: stack
+  if (window.innerWidth < 768) {
+    document.getElementById('revision-layout').style.gridTemplateColumns = '1fr';
+  }
+});
+
+function loadRevisionData() {
+  const stats = RevisionEngine.getStats();
+
+  // Reset view
+  document.getElementById('review-area').style.display = 'none';
+  document.getElementById('review-complete').style.display = 'none';
+
+  // Update stats
+  document.getElementById('srs-due').textContent = stats.due;
+  document.getElementById('srs-total').textContent = stats.total;
+  document.getElementById('srs-weak').textContent = stats.weak;
+  document.getElementById('srs-reviewed-today').textContent = stats.reviewedToday;
+
+  dueCards = RevisionEngine.getDueCards();
+
+  if (stats.total === 0) {
+    document.getElementById('initial-empty').style.display = 'block';
+    document.getElementById('no-due-state').style.display = 'none';
+    document.getElementById('due-banner').style.display = 'none';
+  } else if (dueCards.length === 0) {
+    document.getElementById('initial-empty').style.display = 'none';
+    document.getElementById('no-due-state').style.display = 'block';
+    document.getElementById('due-banner').style.display = 'none';
+  } else {
+    document.getElementById('initial-empty').style.display = 'none';
+    document.getElementById('no-due-state').style.display = 'none';
+    document.getElementById('due-banner').style.display = 'block';
+    document.getElementById('due-count-text').textContent = dueCards.length;
+  }
+
+  // Render graph
+  renderReviewGraph();
+
+  // Render weak points
+  renderWeakPoints();
+}
+
+function renderReviewGraph() {
+  const data = RevisionEngine.getReviewGraph();
+  const maxCount = Math.max(...data.map(d => d.count), 1);
+  const graph = document.getElementById('review-graph');
+
+  graph.innerHTML = data.map(day => {
+    const pct = Math.round((day.count / maxCount) * 100);
+    return `
+      <div class="bar-col">
+        <div class="bar-fill" style="height:${Math.max(pct, day.count > 0 ? 10 : 2)}%;"></div>
+        <div class="bar-label">${day.dayName}</div>
+        <div class="bar-label" style="color:var(--accent-primary);">${day.count}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderWeakPoints() {
+  const weakCards = RevisionEngine.getWeakPoints();
+  const container = document.getElementById('weak-points-list');
+
+  if (weakCards.length === 0) {
+    container.innerHTML = '<div style="font-size:var(--text-sm);color:var(--text-muted);text-align:center;padding:12px;">No weak points identified yet</div>';
+    return;
+  }
+
+  container.innerHTML = weakCards.map(card => `
+    <div style="padding:10px;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);border-radius:var(--border-radius-sm);margin-bottom:8px;">
+      <div style="font-size:var(--text-xs);font-weight:700;color:var(--error);margin-bottom:4px;">
+        ❌ ${card.incorrectCount} times wrong · ${card.topic || 'General'}
+      </div>
+      <div style="font-size:var(--text-xs);color:var(--text-secondary);line-height:1.4;">
+        ${card.question ? card.question.substring(0, 80) + '...' : 'Question unavailable'}
+      </div>
+    </div>
+  `).join('');
+}
+
+function startReview() {
+  dueCards = RevisionEngine.getDueCards();
+  currentCardIdx = 0;
+  reviewedCount = 0;
+
+  if (dueCards.length === 0) {
+    Toast.show('No cards due right now!', 'info');
+    return;
+  }
+
+  document.getElementById('due-banner').style.display = 'none';
+  document.getElementById('initial-empty').style.display = 'none';
+  document.getElementById('no-due-state').style.display = 'none';
+  document.getElementById('review-area').style.display = 'block';
+  document.getElementById('review-complete').style.display = 'none';
+
+  showCard();
+}
+
+function showCard() {
+  currentCard = dueCards[currentCardIdx];
+  if (!currentCard) { endReview(); return; }
+
+  const total = dueCards.length;
+  document.getElementById('review-progress').textContent = `Card ${currentCardIdx + 1} of ${total}`;
+
+  // Front
+  document.getElementById('card-front').style.display = 'flex';
+  document.getElementById('card-back').style.display = 'none';
+  document.getElementById('card-topic-label').textContent = currentCard.topic || 'General';
+  document.getElementById('card-question').textContent = currentCard.question || 'Question unavailable';
+
+  // Hide AI section
+  document.getElementById('ai-explain-section').style.display = 'none';
+  document.getElementById('ai-explain-card-btn').style.display = 'inline-flex';
+  document.getElementById('ai-explain-card-btn').disabled = false;
+  document.getElementById('ai-explain-card-btn').textContent = '🤖 Explain This Again (AI)';
+}
+
+function revealCard() {
+  document.getElementById('card-front').style.display = 'none';
+  document.getElementById('card-back').style.display = 'flex';
+  document.getElementById('card-back').style.flexDirection = 'column';
+
+  document.getElementById('back-topic-label').textContent = currentCard.topic || 'General';
+  document.getElementById('back-question').textContent = currentCard.question || '';
+
+  // Options
+  const optContainer = document.getElementById('back-options');
+  if (currentCard.options) {
+    optContainer.innerHTML = ['A', 'B', 'C', 'D'].map(letter => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;
+           background:${letter === currentCard.correct ? 'rgba(34,197,94,0.1)' : 'var(--bg-elevated)'};
+           border:1px solid ${letter === currentCard.correct ? 'var(--success)' : 'var(--border-subtle)'};
+           border-radius:var(--border-radius-sm);margin-bottom:6px;">
+        <span style="font-weight:700;font-size:var(--text-sm);
+              color:${letter === currentCard.correct ? 'var(--success)' : 'var(--text-muted)'};">${letter}</span>
+        <span style="font-size:var(--text-sm);color:var(--text-primary);">${currentCard.options[letter] || ''}</span>
+        ${letter === currentCard.correct ? '<span style="margin-left:auto;color:var(--success);">✓</span>' : ''}
+      </div>
+    `).join('');
+  } else {
+    optContainer.innerHTML = '';
+  }
+
+  document.getElementById('correct-answer-text').textContent =
+    currentCard.correct && currentCard.options
+      ? `${currentCard.correct}) ${currentCard.options[currentCard.correct]}`
+      : 'See explanation below';
+
+  document.getElementById('card-explanation').textContent =
+    currentCard.explanation || 'No explanation available.';
+}
+
+function rateCard(rating) {
+  if (!currentCard) return;
+
+  RevisionEngine.rateCard(currentCard.id, rating);
+  reviewedCount++;
+
+  // Move to next
+  currentCardIdx++;
+  if (currentCardIdx < dueCards.length) {
+    showCard();
+    Toast.show(RevisionEngine.RATING_LABELS[rating].label + ` — next in ${RevisionEngine.INTERVALS[rating]} day(s)`, 'info', 2000);
+  } else {
+    showReviewComplete();
+  }
+
+  // Update stats
+  const stats = RevisionEngine.getStats();
+  document.getElementById('srs-due').textContent = Math.max(0, stats.due - reviewedCount);
+  document.getElementById('srs-reviewed-today').textContent = stats.reviewedToday;
+  renderReviewGraph();
+}
+
+function showReviewComplete() {
+  document.getElementById('review-area').style.display = 'none';
+  document.getElementById('review-complete').style.display = 'block';
+  document.getElementById('review-complete-msg').textContent =
+    `You reviewed ${reviewedCount} card${reviewedCount !== 1 ? 's' : ''}. Keep it up! 🧠`;
+
+  const remainingDue = RevisionEngine.getDueCards().length;
+  const continueBtn = document.getElementById('continue-review-btn');
+  if (remainingDue > 0) {
+    continueBtn.textContent = `Review ${remainingDue} More Cards`;
+  } else {
+    continueBtn.textContent = 'Back to Dashboard';
+    continueBtn.onclick = () => window.location.href = 'index.html';
+  }
+
+  renderWeakPoints();
+  renderReviewGraph();
+}
+
+function endReview() {
+  showReviewComplete();
+}
+
+async function fetchAIExplanation() {
+  if (!currentCard) return;
+  const btn = document.getElementById('ai-explain-card-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Loading...';
+
+  const explanation = await RevisionEngine.explainCard(currentCard);
+
+  const section = document.getElementById('ai-explain-section');
+  const text = document.getElementById('ai-explain-text');
+  section.style.display = 'block';
+  text.textContent = explanation || 'Could not fetch AI explanation. Check API key and uploaded notes.';
+
+  btn.style.display = 'none';
+}
+</script>
+</body>
+</html>

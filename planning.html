@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedStudy Hub — Study Planner</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .task-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 16px; background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle); border-radius: var(--border-radius-sm);
+      margin-bottom: 8px; transition: all var(--transition);
+      animation: fadeSlideUp 0.3s ease;
+    }
+    .task-item.completed { opacity: 0.6; }
+    .task-item.completed .task-title { text-decoration: line-through; color: var(--text-muted); }
+    .task-checkbox {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid var(--border-subtle); flex-shrink: 0;
+      cursor: pointer; transition: all var(--transition);
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 2px;
+    }
+    .task-checkbox.checked {
+      background: var(--success); border-color: var(--success); color: white;
+    }
+    .priority-high { border-left: 3px solid var(--error); }
+    .priority-medium { border-left: 3px solid var(--warning); }
+    .priority-low { border-left: 3px solid var(--accent-primary); }
+    .cal-task-badge {
+      background: rgba(14,165,233,0.2); color: var(--accent-primary);
+      border-radius: 3px; padding: 1px 4px; font-size: 10px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 100%; display: block; margin-bottom: 2px;
+    }
+    .cal-task-badge.high { background: rgba(239,68,68,0.2); color: var(--error); }
+    .cal-task-badge.medium { background: rgba(245,158,11,0.2); color: var(--warning); }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="sidebar" id="sidebar"></div>
+
+  <main class="main-content" id="main-content">
+    <div class="content-wrapper">
+
+      <div class="page-header">
+        <div class="page-title">📅 Study Planner</div>
+        <div class="page-subtitle">Weekly planning, task tracking, and AI study suggestions</div>
+      </div>
+
+      <!-- Exam Date + Countdown -->
+      <div class="card mb-6" style="background:linear-gradient(135deg,rgba(14,165,233,0.08),rgba(16,185,129,0.05));border-color:rgba(14,165,233,0.2);">
+        <div style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;flex-wrap:wrap;">
+          <div>
+            <div class="card-title" style="margin-bottom:8px;">🎯 Exam Date</div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+              <input type="date" class="form-input" id="exam-date-input" style="width:auto;">
+              <button class="btn btn-primary btn-sm" id="save-exam-date-btn">Save Date</button>
+            </div>
+          </div>
+          <div id="exam-countdown-display" style="text-align:center;display:none;">
+            <div class="stat-value" id="countdown-days" style="font-size:var(--text-4xl);">0</div>
+            <div class="stat-label">Days Until Exam</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start;" id="planner-layout">
+
+        <!-- Left: Calendar + Tasks -->
+        <div>
+          <!-- Weekly Calendar -->
+          <div class="card mb-6">
+            <div class="card-header">
+              <div class="card-title">📆 This Week</div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-ghost btn-sm" id="prev-week-btn">← Prev</button>
+                <button class="btn btn-ghost btn-sm" id="today-btn">Today</button>
+                <button class="btn btn-ghost btn-sm" id="next-week-btn">Next →</button>
+              </div>
+            </div>
+            <div style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:16px;" id="week-range-label"></div>
+            <div class="calendar-grid">
+              <div class="calendar-day-header">Mon</div>
+              <div class="calendar-day-header">Tue</div>
+              <div class="calendar-day-header">Wed</div>
+              <div class="calendar-day-header">Thu</div>
+              <div class="calendar-day-header">Fri</div>
+              <div class="calendar-day-header">Sat</div>
+              <div class="calendar-day-header">Sun</div>
+            </div>
+            <div class="calendar-grid" id="calendar-body"></div>
+          </div>
+
+          <!-- Today's Checklist -->
+          <div class="card mb-6">
+            <div class="card-header">
+              <div class="card-title">✅ Today's Tasks</div>
+              <div style="font-size:var(--text-sm);color:var(--text-muted);" id="today-progress-label">0/0 complete</div>
+            </div>
+            <div class="progress-bar-wrapper" style="margin-bottom:16px;">
+              <div class="progress-bar-fill" id="today-progress-bar" style="width:0%;"></div>
+            </div>
+            <div id="today-tasks-list">
+              <div class="empty-state" style="padding:20px;">
+                <div style="font-size:24px;margin-bottom:8px;">📭</div>
+                <div style="font-size:var(--text-sm);color:var(--text-muted);">No tasks scheduled for today</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Suggestions -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">🤖 AI Weekly Plan</div>
+              <button class="btn btn-primary btn-sm" id="ai-suggest-btn">✨ Suggest My Week</button>
+            </div>
+            <div id="ai-plan-area">
+              <div style="font-size:var(--text-sm);color:var(--text-muted);">
+                Click "Suggest My Week" to get an AI-generated study plan based on your weak areas and revision queue.
+              </div>
+            </div>
+            <div id="ai-plan-loading" style="display:none;text-align:center;padding:20px;">
+              <div class="spinner" style="margin:0 auto 12px;"></div>
+              <p style="color:var(--text-muted);font-size:var(--text-sm);">AI is analyzing your progress...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Add Task Panel -->
+        <div style="position:sticky;top:20px;">
+          <div class="card mb-4">
+            <div class="card-title" style="margin-bottom:16px;">➕ Add Task</div>
+
+            <div class="form-group">
+              <label class="form-label">Task Name</label>
+              <input type="text" class="form-input" id="task-title" placeholder="e.g., Review Cardiology MCQs">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Subject / Topic</label>
+              <input type="text" class="form-input" id="task-subject" placeholder="e.g., Physiology">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Date</label>
+              <input type="date" class="form-input" id="task-date">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Duration</label>
+              <select class="form-select" id="task-duration">
+                <option value="30">30 minutes</option>
+                <option value="60" selected>1 hour</option>
+                <option value="90">1.5 hours</option>
+                <option value="120">2 hours</option>
+                <option value="180">3 hours</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Priority</label>
+              <select class="form-select" id="task-priority">
+                <option value="high">🔴 High</option>
+                <option value="medium" selected>🟡 Medium</option>
+                <option value="low">🟢 Low</option>
+              </select>
+            </div>
+
+            <button class="btn btn-primary btn-full" id="add-task-btn">+ Add Task</button>
+          </div>
+
+          <!-- Overall Progress -->
+          <div class="card">
+            <div class="card-title" style="margin-bottom:16px;">📊 Overall Progress</div>
+            <div id="overall-stats">
+              <div style="margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;font-size:var(--text-sm);margin-bottom:4px;">
+                  <span>Tasks Completed</span>
+                  <span id="overall-pct">0%</span>
+                </div>
+                <div class="progress-bar-wrapper">
+                  <div class="progress-bar-fill" id="overall-progress-bar" style="width:0%;"></div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:var(--text-xs);">
+                <div style="background:var(--bg-elevated);padding:10px;border-radius:var(--border-radius-sm);text-align:center;">
+                  <div style="font-weight:800;font-size:var(--text-xl);color:var(--success);" id="total-completed">0</div>
+                  <div style="color:var(--text-muted);">Completed</div>
+                </div>
+                <div style="background:var(--bg-elevated);padding:10px;border-radius:var(--border-radius-sm);text-align:center;">
+                  <div style="font-weight:800;font-size:var(--text-xl);color:var(--accent-primary);" id="total-planned">0</div>
+                  <div style="color:var(--text-muted);">Total Tasks</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav" id="bottom-nav"></nav>
+
+<script src="js/core.js"></script>
+<script src="js/revision-engine.js"></script>
+<script>
+let currentWeekOffset = 0;
+let allTasks = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Set default task date to today
+  document.getElementById('task-date').value = DateUtils.today();
+
+  // Set exam date
+  const savedExamDate = Storage.get(KEYS.EXAM_DATE, null);
+  if (savedExamDate) {
+    document.getElementById('exam-date-input').value = savedExamDate;
+    updateCountdown(savedExamDate);
+  }
+
+  loadTasks();
+  renderCalendar();
+  renderTodaysTasks();
+  updateOverallStats();
+
+  document.getElementById('save-exam-date-btn').addEventListener('click', saveExamDate);
+  document.getElementById('add-task-btn').addEventListener('click', addTask);
+  document.getElementById('prev-week-btn').addEventListener('click', () => { currentWeekOffset--; renderCalendar(); });
+  document.getElementById('next-week-btn').addEventListener('click', () => { currentWeekOffset++; renderCalendar(); });
+  document.getElementById('today-btn').addEventListener('click', () => { currentWeekOffset = 0; renderCalendar(); });
+  document.getElementById('ai-suggest-btn').addEventListener('click', getAISuggestions);
+
+  // Enter key
+  document.getElementById('task-title').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTask();
+  });
+
+  // Mobile
+  if (window.innerWidth < 768) {
+    document.getElementById('planner-layout').style.gridTemplateColumns = '1fr';
+  }
+});
+
+function loadTasks() {
+  allTasks = Storage.get(KEYS.PLANNER, []);
+}
+
+function saveTasks() {
+  Storage.set(KEYS.PLANNER, allTasks);
+}
+
+function saveExamDate() {
+  const date = document.getElementById('exam-date-input').value;
+  if (!date) { Toast.show('Please select a date', 'error'); return; }
+  Storage.set(KEYS.EXAM_DATE, date);
+  updateCountdown(date);
+  Toast.show('Exam date saved!', 'success');
+}
+
+function updateCountdown(dateStr) {
+  const days = DateUtils.daysUntil(dateStr);
+  if (days !== null) {
+    const el = document.getElementById('exam-countdown-display');
+    const daysEl = document.getElementById('countdown-days');
+    if (el) el.style.display = 'block';
+    if (daysEl) daysEl.textContent = Math.max(0, days);
+  }
+}
+
+function addTask() {
+  const title = document.getElementById('task-title').value.trim();
+  const subject = document.getElementById('task-subject').value.trim();
+  const date = document.getElementById('task-date').value;
+  const duration = document.getElementById('task-duration').value;
+  const priority = document.getElementById('task-priority').value;
+
+  if (!title) { Toast.show('Please enter a task name', 'error'); return; }
+  if (!date) { Toast.show('Please select a date', 'error'); return; }
+
+  const task = {
+    id: generateId(),
+    title,
+    subject: subject || 'General',
+    date,
+    duration: parseInt(duration, 10),
+    priority,
+    completed: false,
+    createdAt: new Date().toISOString(),
+  };
+
+  allTasks.push(task);
+  saveTasks();
+
+  // Clear form
+  document.getElementById('task-title').value = '';
+  document.getElementById('task-subject').value = '';
+  document.getElementById('task-date').value = DateUtils.today();
+
+  renderCalendar();
+  renderTodaysTasks();
+  updateOverallStats();
+  Toast.show('Task added!', 'success');
+}
+
+function toggleTask(id) {
+  const task = allTasks.find(t => t.id === id);
+  if (!task) return;
+  task.completed = !task.completed;
+  saveTasks();
+  renderTodaysTasks();
+  updateOverallStats();
+  renderCalendar();
+}
+
+function deleteTask(id) {
+  allTasks = allTasks.filter(t => t.id !== id);
+  saveTasks();
+  renderCalendar();
+  renderTodaysTasks();
+  updateOverallStats();
+}
+
+function getWeekDates(offsetWeeks = 0) {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const diffToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + diffToMonday + (offsetWeeks * 7));
+  monday.setHours(0, 0, 0, 0);
+
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push(d.toISOString().split('T')[0]);
+  }
+  return days;
+}
+
+function renderCalendar() {
+  const weekDates = getWeekDates(currentWeekOffset);
+  const today = DateUtils.today();
+
+  // Update week range label
+  const first = new Date(weekDates[0]);
+  const last = new Date(weekDates[6]);
+  document.getElementById('week-range-label').textContent =
+    `${first.toLocaleDateString('en-US',{month:'short',day:'numeric'})} — ${last.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+
+  const body = document.getElementById('calendar-body');
+  body.innerHTML = weekDates.map(date => {
+    const dayTasks = allTasks.filter(t => t.date === date);
+    const dayNum = new Date(date).getDate();
+    const isToday = date === today;
+
+    return `
+      <div class="calendar-day ${isToday ? 'today' : ''}" onclick="selectCalendarDay('${date}')" style="cursor:pointer;">
+        <div class="calendar-day-num" style="color:${isToday ? 'var(--accent-primary)' : 'var(--text-muted)'};">
+          ${dayNum}
+        </div>
+        ${dayTasks.slice(0, 3).map(t => `
+          <div class="cal-task-badge ${t.priority}" title="${t.title}">
+            ${t.completed ? '✓ ' : ''}${t.title.substring(0, 12)}
+          </div>
+        `).join('')}
+        ${dayTasks.length > 3 ? `<div style="font-size:10px;color:var(--text-muted);">+${dayTasks.length - 3} more</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function selectCalendarDay(date) {
+  document.getElementById('task-date').value = date;
+  renderDayTasks(date);
+}
+
+function renderDayTasks(date) {
+  const dayTasks = allTasks.filter(t => t.date === date);
+  const listEl = document.getElementById('today-tasks-list');
+  const isToday = date === DateUtils.today();
+  const label = isToday ? "Today's Tasks" : `Tasks for ${new Date(date).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+
+  renderTaskList(listEl, dayTasks, label);
+  updateTodayProgress(dayTasks);
+}
+
+function renderTodaysTasks() {
+  const today = DateUtils.today();
+  const todayTasks = allTasks.filter(t => t.date === today);
+  const listEl = document.getElementById('today-tasks-list');
+  renderTaskList(listEl, todayTasks, "Today's Tasks");
+  updateTodayProgress(todayTasks);
+}
+
+function renderTaskList(container, tasks, label) {
+  if (!container) return;
+
+  if (tasks.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state" style="padding:20px;">
+        <div style="font-size:24px;margin-bottom:8px;">📭</div>
+        <div style="font-size:var(--text-sm);color:var(--text-muted);">No tasks for this day</div>
+      </div>
+    `;
+    return;
+  }
+
+  const priorityIcons = { high: '🔴', medium: '🟡', low: '🟢' };
+
+  container.innerHTML = tasks.map(task => `
+    <div class="task-item priority-${task.priority} ${task.completed ? 'completed' : ''}">
+      <div class="task-checkbox ${task.completed ? 'checked' : ''}" onclick="toggleTask('${task.id}')">
+        ${task.completed ? '✓' : ''}
+      </div>
+      <div style="flex:1;">
+        <div class="task-title" style="font-weight:600;font-size:var(--text-sm);">${task.title}</div>
+        <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:2px;">
+          ${priorityIcons[task.priority]} ${task.subject} · ${task.duration} min
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="deleteTask('${task.id}')" title="Delete">✕</button>
+    </div>
+  `).join('');
+}
+
+function updateTodayProgress(tasks) {
+  const total = tasks.length;
+  const done = tasks.filter(t => t.completed).length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  document.getElementById('today-progress-label').textContent = `${done}/${total} complete`;
+  document.getElementById('today-progress-bar').style.width = `${pct}%`;
+}
+
+function updateOverallStats() {
+  const total = allTasks.length;
+  const done = allTasks.filter(t => t.completed).length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  document.getElementById('total-planned').textContent = total;
+  document.getElementById('total-completed').textContent = done;
+  document.getElementById('overall-pct').textContent = `${pct}%`;
+  document.getElementById('overall-progress-bar').style.width = `${pct}%`;
+}
+
+async function getAISuggestions() {
+  const btn = document.getElementById('ai-suggest-btn');
+  const planArea = document.getElementById('ai-plan-area');
+  const loading = document.getElementById('ai-plan-loading');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating...';
+  planArea.style.display = 'none';
+  loading.style.display = 'block';
+
+  // Gather context
+  const srsStats = {
+    total: (Storage.get(KEYS.SRS_CARDS, [])).length,
+    weak: (Storage.get(KEYS.SRS_CARDS, [])).filter(c => (c.incorrectCount || 0) >= 2).length,
+    due: (Storage.get(KEYS.SRS_CARDS, [])).filter(c => c.dueDate <= DateUtils.today()).length,
+  };
+
+  const studyStats = StudyStats.get();
+  const hekoStreak = StreakManager.get();
+
+  const systemPrompt = `You are a medical study coach helping a student plan their week. Create a realistic, balanced 7-day study plan. Be practical and specific. Format as a clear day-by-day plan.`;
+
+  const userMessage = `Create a weekly study plan for a medical student with these stats:
+- Total accuracy: ${StudyStats.accuracy()}%
+- Total MCQs answered: ${studyStats.totalAnswered}
+- Spaced revision cards: ${srsStats.total} total, ${srsStats.weak} weak points, ${srsStats.due} due
+- HEKO streak: ${hekoStreak.count} days
+- Exam date: ${Storage.get(KEYS.EXAM_DATE, 'Not set')}
+
+Generate a balanced Mon–Sun study plan with:
+1. Daily HEKO session (10 min) — mandatory every day
+2. Spaced revision review (if cards are due)
+3. Subject study sessions (mix of strong and weak areas)
+4. Practice MCQs
+5. Rest time
+
+Keep each day's plan to 2-3 focused study blocks. Format as:
+**Monday:** ...
+**Tuesday:** ...
+etc.
+
+Keep under 400 words.`;
+
+  const result = await AIClient.call(systemPrompt, userMessage);
+
+  loading.style.display = 'none';
+  planArea.style.display = 'block';
+  btn.disabled = false;
+  btn.textContent = '✨ Suggest My Week';
+
+  if (result) {
+    planArea.innerHTML = `
+      <div class="notes-content" style="font-size:var(--text-sm);">${renderMarkdown(result)}</div>
+      <div style="margin-top:16px;font-size:var(--text-xs);color:var(--text-muted);">
+        Generated on ${new Date().toLocaleString()} · Based on your actual progress data
+      </div>
+    `;
+    Toast.show('AI study plan generated!', 'success');
+  }
+}
+</script>
+</body>
+</html>

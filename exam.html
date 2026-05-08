@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedStudy Hub — Exam Simulator</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .exam-active .sidebar { display: none !important; }
+    .exam-active .bottom-nav { display: none !important; }
+    .exam-active .main-content { margin-left: 0 !important; }
+    .exam-header {
+      position: sticky; top: 0; z-index: 50;
+      background: var(--bg-card); border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 24px; display: flex; align-items: center;
+      justify-content: space-between; gap: 16px;
+    }
+    .palette-legend { display: flex; gap: 12px; flex-wrap: wrap; }
+    .palette-legend-item { display: flex; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--text-muted); }
+    .palette-dot { width: 10px; height: 10px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div class="app-shell" id="app-shell">
+  <div class="sidebar" id="sidebar"></div>
+
+  <main class="main-content" id="main-content">
+    <div class="content-wrapper" id="main-content-wrapper">
+
+      <div class="page-header">
+        <div class="page-title">📝 Exam Simulator</div>
+        <div class="page-subtitle">Realistic exam conditions for University & NEET PG</div>
+      </div>
+
+      <!-- Mode Selector -->
+      <div id="mode-selector">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:700px;margin:0 auto 32px;">
+          <button class="module-card" id="univ-mode-btn" style="text-align:left;cursor:pointer;border:none;">
+            <div class="module-card-icon" style="background:rgba(14,165,233,0.15);">🎓</div>
+            <div class="module-card-title">University Exam</div>
+            <div class="module-card-desc">Flexible question count, optional timer. Great for final exam prep.</div>
+            <div class="badge badge-primary" style="margin-top:8px;">Configurable</div>
+          </button>
+          <button class="module-card" id="neet-mode-btn" style="text-align:left;cursor:pointer;border:none;">
+            <div class="module-card-icon" style="background:rgba(239,68,68,0.15);">🏥</div>
+            <div class="module-card-title">NEET PG Mode</div>
+            <div class="module-card-desc">200 questions, 180-minute timer, negative marking (-1/3).</div>
+            <div class="badge badge-error" style="margin-top:8px;">Competitive</div>
+          </button>
+        </div>
+
+        <!-- Config Panel -->
+        <div class="card" id="config-panel" style="max-width:500px;margin:0 auto;display:none;">
+          <div class="card-title" id="config-title">University Exam Setup</div>
+          <div id="univ-config">
+            <div class="form-group">
+              <label class="form-label">Number of Questions</label>
+              <select class="form-select" id="univ-q-count">
+                <option value="10">10 Questions</option>
+                <option value="25" selected>25 Questions</option>
+                <option value="50">50 Questions</option>
+                <option value="all">All Available</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Time Limit</label>
+              <select class="form-select" id="univ-time-limit">
+                <option value="0">No Time Limit</option>
+                <option value="30">30 Minutes</option>
+                <option value="60" selected>60 Minutes</option>
+                <option value="90">90 Minutes</option>
+              </select>
+            </div>
+          </div>
+          <div id="neet-config" style="display:none;">
+            <div style="background:var(--bg-elevated);border-radius:var(--border-radius-sm);padding:16px;margin-bottom:16px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div><div class="stat-label">Questions</div><div style="font-weight:700;font-size:var(--text-lg);">200</div></div>
+                <div><div class="stat-label">Time</div><div style="font-weight:700;font-size:var(--text-lg);">180 min</div></div>
+                <div><div class="stat-label">Marking</div><div style="font-weight:700;font-size:var(--text-lg);">+4 / -1.33</div></div>
+                <div><div class="stat-label">Negative Mark</div><div style="font-weight:700;font-size:var(--text-lg);color:var(--error);">Yes</div></div>
+              </div>
+            </div>
+            <p style="font-size:var(--text-sm);color:var(--text-muted);">Note: Exam will use all available questions (padded if fewer than 200).</p>
+          </div>
+          <button class="btn btn-primary btn-full" id="launch-exam-btn" style="margin-top:16px;">
+            🚀 Launch Exam
+          </button>
+          <button class="btn btn-ghost btn-sm" id="back-to-mode-btn" style="margin-top:8px;width:100%;">
+            ← Back
+          </button>
+        </div>
+      </div>
+
+      <!-- Results Page -->
+      <div id="results-page" style="display:none;">
+        <div style="max-width:700px;margin:0 auto;">
+          <div class="card text-center mb-6">
+            <div style="font-size:64px;margin-bottom:16px;" id="result-emoji">🎯</div>
+            <div style="font-size:var(--text-3xl);font-weight:900;margin-bottom:8px;" id="result-title">Exam Complete</div>
+            <div class="stat-value" style="font-size:var(--text-4xl);" id="result-score">0</div>
+            <div class="stat-label" id="result-score-label">Total Score</div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
+            <div class="stat-card">
+              <div class="stat-value" id="res-correct" style="font-size:var(--text-2xl);">0</div>
+              <div class="stat-label">Correct</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="res-wrong" style="font-size:var(--text-2xl);color:var(--error);">0</div>
+              <div class="stat-label">Wrong</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="res-unanswered" style="font-size:var(--text-2xl);color:var(--warning);">0</div>
+              <div class="stat-label">Unanswered</div>
+            </div>
+          </div>
+
+          <div class="card mb-6">
+            <div class="card-title" style="margin-bottom:16px;">📊 Topic-wise Breakdown</div>
+            <div id="topic-breakdown"></div>
+          </div>
+
+          <div class="card mb-6" id="weak-areas-card" style="display:none;">
+            <div class="card-title" style="margin-bottom:8px;">⚠️ Weak Areas Identified</div>
+            <p style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:16px;">
+              These topics have been added to your spaced revision queue.
+            </p>
+            <div id="weak-areas-list"></div>
+          </div>
+
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+            <a href="revision.html" class="btn btn-primary">🔁 Review Weak Points</a>
+            <button class="btn btn-secondary" id="retry-exam-btn">🔄 Retry Exam</button>
+            <a href="index.html" class="btn btn-ghost">🏠 Dashboard</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exam Interface (Full Screen) -->
+    <div id="exam-interface" style="display:none;">
+      <div class="exam-header">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="font-weight:800;font-size:var(--text-lg);" id="exam-mode-label">University Exam</div>
+          <div class="badge badge-primary" id="exam-timer-badge" style="font-size:var(--text-base);padding:6px 14px;">
+            ⏱ <span id="exam-timer">60:00</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <span style="font-size:var(--text-sm);color:var(--text-muted);" id="exam-progress-label">1 / 25</span>
+          <button class="btn btn-danger btn-sm" id="submit-exam-btn">Submit Exam</button>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 260px;gap:0;height:calc(100vh - 60px);">
+        <!-- Question Panel -->
+        <div style="padding:32px;overflow-y:auto;">
+          <div class="question-card" id="exam-q-card">
+            <div class="question-number" id="exam-q-num">Question 1</div>
+            <div class="question-text" id="exam-q-text"></div>
+            <div class="options-list" id="exam-options-list"></div>
+            <div style="display:flex;gap:10px;margin-top:16px;">
+              <button class="btn btn-secondary btn-sm" id="exam-mark-btn">📌 Mark for Review</button>
+              <button class="btn btn-ghost btn-sm" id="exam-prev-btn">← Prev</button>
+              <button class="btn btn-primary btn-sm" id="exam-next-btn">Next →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Palette Panel -->
+        <div style="background:var(--bg-card);border-left:1px solid var(--border-subtle);padding:20px;overflow-y:auto;">
+          <div style="font-weight:700;margin-bottom:12px;font-size:var(--text-sm);">Question Palette</div>
+          <div class="question-palette" id="question-palette"></div>
+          <div class="divider"></div>
+          <div class="palette-legend">
+            <div class="palette-legend-item"><div class="palette-dot" style="background:var(--bg-elevated);border:1px solid var(--border-subtle);"></div>Unanswered</div>
+            <div class="palette-legend-item"><div class="palette-dot" style="background:rgba(34,197,94,0.2);border:1px solid var(--success);"></div>Answered</div>
+            <div class="palette-legend-item"><div class="palette-dot" style="background:rgba(245,158,11,0.2);border:1px solid var(--warning);"></div>Marked</div>
+            <div class="palette-legend-item"><div class="palette-dot" style="background:var(--accent-primary);"></div>Current</div>
+          </div>
+          <div class="divider"></div>
+          <div id="exam-stats-panel" style="font-size:var(--text-xs);color:var(--text-muted);">
+            <div>Answered: <b id="pal-answered">0</b></div>
+            <div>Marked: <b id="pal-marked">0</b></div>
+            <div>Unanswered: <b id="pal-unanswered">0</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav" id="bottom-nav"></nav>
+
+<script src="js/core.js"></script>
+<script src="js/quiz-engine.js"></script>
+<script src="js/revision-engine.js"></script>
+<script>
+let examMode = null; // 'university' | 'neet'
+let examQuestions = [];
+let examAnswers = {}; // { index: 'A'|'B'|'C'|'D' }
+let markedQuestions = new Set();
+let currentExamIdx = 0;
+let timerInterval = null;
+let timeRemaining = 0;
+let examConfig = {};
+
+document.addEventListener('DOMContentLoaded', async () => {
+  Storage.set('medhub_last_exam', new Date().toISOString());
+  await QuizEngine.loadQuestions();
+
+  document.getElementById('univ-mode-btn').addEventListener('click', () => selectMode('university'));
+  document.getElementById('neet-mode-btn').addEventListener('click', () => selectMode('neet'));
+  document.getElementById('launch-exam-btn').addEventListener('click', launchExam);
+  document.getElementById('back-to-mode-btn').addEventListener('click', () => {
+    document.getElementById('config-panel').style.display = 'none';
+  });
+  document.getElementById('submit-exam-btn').addEventListener('click', confirmSubmit);
+  document.getElementById('retry-exam-btn').addEventListener('click', () => {
+    document.getElementById('results-page').style.display = 'none';
+    document.getElementById('mode-selector').style.display = 'block';
+    document.getElementById('main-content-wrapper').style.display = 'block';
+    document.getElementById('page-header') && (document.getElementById('page-header').style.display = 'block');
+  });
+  document.getElementById('exam-next-btn').addEventListener('click', () => goToQuestion(currentExamIdx + 1));
+  document.getElementById('exam-prev-btn').addEventListener('click', () => goToQuestion(currentExamIdx - 1));
+  document.getElementById('exam-mark-btn').addEventListener('click', toggleMarkQuestion);
+});
+
+function selectMode(mode) {
+  examMode = mode;
+  const configPanel = document.getElementById('config-panel');
+  const univConfig = document.getElementById('univ-config');
+  const neetConfig = document.getElementById('neet-config');
+  const configTitle = document.getElementById('config-title');
+
+  configPanel.style.display = 'block';
+  if (mode === 'university') {
+    univConfig.style.display = 'block';
+    neetConfig.style.display = 'none';
+    configTitle.textContent = '🎓 University Exam Setup';
+  } else {
+    univConfig.style.display = 'none';
+    neetConfig.style.display = 'block';
+    configTitle.textContent = '🏥 NEET PG Mode';
+  }
+  configPanel.scrollIntoView({ behavior: 'smooth' });
+}
+
+function launchExam() {
+  const allQs = QuizEngine.allQuestions;
+  if (allQs.length === 0) {
+    Toast.show('No questions available. Load questions first.', 'error');
+    return;
+  }
+
+  let questions = QuizEngine.shuffle(allQs);
+
+  if (examMode === 'neet') {
+    examConfig = { mode: 'neet', totalQs: 200, timeLimit: 180, negativeMarking: true };
+    // Pad with repeats if needed
+    while (questions.length < 200) {
+      questions = [...questions, ...QuizEngine.shuffle(allQs)];
+    }
+    questions = questions.slice(0, 200);
+    timeRemaining = 180 * 60;
+  } else {
+    const qCountVal = document.getElementById('univ-q-count').value;
+    const timeVal = parseInt(document.getElementById('univ-time-limit').value, 10);
+    const count = qCountVal === 'all' ? questions.length : parseInt(qCountVal, 10);
+    questions = questions.slice(0, Math.min(count, questions.length));
+    examConfig = { mode: 'university', totalQs: questions.length, timeLimit: timeVal, negativeMarking: false };
+    timeRemaining = timeVal * 60;
+  }
+
+  examQuestions = questions;
+  examAnswers = {};
+  markedQuestions = new Set();
+  currentExamIdx = 0;
+
+  // Switch to full-screen exam
+  document.getElementById('main-content-wrapper').style.display = 'none';
+  document.getElementById('exam-interface').style.display = 'block';
+  document.getElementById('app-shell').classList.add('exam-active');
+  document.getElementById('exam-mode-label').textContent =
+    examMode === 'neet' ? '🏥 NEET PG' : '🎓 University Exam';
+
+  // Build palette
+  buildPalette();
+  renderExamQuestion();
+
+  // Start timer
+  if (timeRemaining > 0) {
+    document.getElementById('exam-timer-badge').style.display = 'inline-flex';
+    startExamTimer();
+  } else {
+    document.getElementById('exam-timer-badge').style.display = 'none';
+  }
+}
+
+function buildPalette() {
+  const palette = document.getElementById('question-palette');
+  palette.innerHTML = '';
+  examQuestions.forEach((_, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'palette-btn';
+    btn.textContent = idx + 1;
+    btn.id = `pal-btn-${idx}`;
+    btn.addEventListener('click', () => goToQuestion(idx));
+    palette.appendChild(btn);
+  });
+  updatePalette();
+}
+
+function updatePalette() {
+  examQuestions.forEach((_, idx) => {
+    const btn = document.getElementById(`pal-btn-${idx}`);
+    if (!btn) return;
+    btn.className = 'palette-btn';
+    if (idx === currentExamIdx) btn.classList.add('current');
+    else if (markedQuestions.has(idx)) btn.classList.add('marked');
+    else if (examAnswers[idx]) btn.classList.add('answered');
+  });
+
+  const answered = Object.keys(examAnswers).length;
+  const marked = markedQuestions.size;
+  document.getElementById('pal-answered').textContent = answered;
+  document.getElementById('pal-marked').textContent = marked;
+  document.getElementById('pal-unanswered').textContent = examQuestions.length - answered;
+}
+
+function renderExamQuestion() {
+  const q = examQuestions[currentExamIdx];
+  if (!q) return;
+
+  document.getElementById('exam-q-num').textContent = `Question ${currentExamIdx + 1}`;
+  document.getElementById('exam-q-text').textContent = q.question;
+  document.getElementById('exam-progress-label').textContent = `${currentExamIdx + 1} / ${examQuestions.length}`;
+
+  const optList = document.getElementById('exam-options-list');
+  optList.innerHTML = '';
+  ['A', 'B', 'C', 'D'].forEach(letter => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.dataset.letter = letter;
+    if (examAnswers[currentExamIdx] === letter) btn.classList.add('selected');
+    btn.innerHTML = `<span class="option-letter">${letter}</span><span>${q.options[letter]}</span>`;
+    btn.addEventListener('click', () => selectExamAnswer(letter));
+    optList.appendChild(btn);
+  });
+
+  const markBtn = document.getElementById('exam-mark-btn');
+  markBtn.textContent = markedQuestions.has(currentExamIdx) ? '📌 Unmark' : '📌 Mark for Review';
+
+  document.getElementById('exam-prev-btn').disabled = currentExamIdx === 0;
+  document.getElementById('exam-next-btn').disabled = currentExamIdx === examQuestions.length - 1;
+
+  updatePalette();
+}
+
+function selectExamAnswer(letter) {
+  examAnswers[currentExamIdx] = letter;
+  document.querySelectorAll('#exam-options-list .option-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.letter === letter);
+  });
+  updatePalette();
+}
+
+function goToQuestion(idx) {
+  if (idx < 0 || idx >= examQuestions.length) return;
+  currentExamIdx = idx;
+  renderExamQuestion();
+}
+
+function toggleMarkQuestion() {
+  if (markedQuestions.has(currentExamIdx)) {
+    markedQuestions.delete(currentExamIdx);
+  } else {
+    markedQuestions.add(currentExamIdx);
+  }
+  renderExamQuestion();
+}
+
+function confirmSubmit() {
+  const unanswered = examQuestions.length - Object.keys(examAnswers).length;
+  const msg = unanswered > 0
+    ? `You have ${unanswered} unanswered questions. Submit anyway?`
+    : 'Submit the exam?';
+
+  if (confirm(msg)) {
+    submitExam();
+  }
+}
+
+function startExamTimer() {
+  clearInterval(timerInterval);
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timeRemaining--;
+    updateTimerDisplay();
+    if (timeRemaining <= 0) {
+      clearInterval(timerInterval);
+      Toast.show('Time is up! Auto-submitting...', 'warning');
+      setTimeout(() => submitExam(), 1500);
+    }
+    if (timeRemaining === 300) {
+      Toast.show('⚠️ 5 minutes remaining!', 'warning', 5000);
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
+  const s = (timeRemaining % 60).toString().padStart(2, '0');
+  const display = `${m}:${s}`;
+  document.getElementById('exam-timer').textContent = display;
+
+  const badge = document.getElementById('exam-timer-badge');
+  if (timeRemaining <= 300) {
+    badge.style.background = 'rgba(239,68,68,0.2)';
+    badge.style.borderColor = 'var(--error)';
+    badge.style.color = 'var(--error)';
+  } else if (timeRemaining <= 600) {
+    badge.style.background = 'rgba(245,158,11,0.2)';
+    badge.style.color = 'var(--warning)';
+  }
+}
+
+function submitExam() {
+  clearInterval(timerInterval);
+
+  let correct = 0;
+  let wrong = 0;
+  const wrongQuestions = [];
+  const topicStats = {};
+
+  examQuestions.forEach((q, idx) => {
+    const userAns = examAnswers[idx];
+    const topic = q.topic || 'General';
+
+    if (!topicStats[topic]) topicStats[topic] = { correct: 0, wrong: 0, unanswered: 0 };
+
+    if (!userAns) {
+      topicStats[topic].unanswered++;
+    } else if (userAns === q.correct) {
+      correct++;
+      topicStats[topic].correct++;
+    } else {
+      wrong++;
+      topicStats[topic].wrong++;
+      wrongQuestions.push(q);
+    }
+  });
+
+  const unanswered = examQuestions.length - correct - wrong;
+  let score;
+
+  if (examConfig.negativeMarking) {
+    score = (correct * 4) - (wrong * (4/3));
+    score = Math.max(0, score).toFixed(2);
+  } else {
+    score = correct;
+  }
+
+  // Push weak areas to revision
+  if (wrongQuestions.length > 0) {
+    RevisionEngine.pushWeakAreasFromExam(wrongQuestions);
+  }
+
+  // Update global stats
+  examQuestions.forEach((q, idx) => {
+    if (examAnswers[idx]) {
+      StudyStats.recordAnswer(examAnswers[idx] === q.correct);
+    }
+  });
+  StudyStats.recordSession();
+
+  // Show results
+  showResults(score, correct, wrong, unanswered, topicStats, wrongQuestions);
+}
+
+function showResults(score, correct, wrong, unanswered, topicStats, wrongQs) {
+  document.getElementById('app-shell').classList.remove('exam-active');
+  document.getElementById('exam-interface').style.display = 'none';
+  document.getElementById('main-content-wrapper').style.display = 'block';
+  document.getElementById('mode-selector').style.display = 'none';
+  document.getElementById('results-page').style.display = 'block';
+
+  const pct = Math.round((correct / examQuestions.length) * 100);
+  document.getElementById('result-emoji').textContent = pct >= 70 ? '🎉' : pct >= 50 ? '📊' : '💪';
+  document.getElementById('result-title').textContent = pct >= 70 ? 'Excellent Work!' : pct >= 50 ? 'Good Effort' : 'Keep Practicing!';
+  document.getElementById('result-score').textContent = examConfig.negativeMarking ? score : `${correct}/${examQuestions.length}`;
+  document.getElementById('result-score-label').textContent = examConfig.negativeMarking ? `NEET PG Score (Max: ${examQuestions.length * 4})` : `${pct}% Accuracy`;
+  document.getElementById('res-correct').textContent = correct;
+  document.getElementById('res-wrong').textContent = wrong;
+  document.getElementById('res-unanswered').textContent = unanswered;
+
+  // Topic breakdown
+  const breakdown = document.getElementById('topic-breakdown');
+  breakdown.innerHTML = Object.entries(topicStats).map(([topic, ts]) => {
+    const total = ts.correct + ts.wrong + ts.unanswered;
+    const pct = total > 0 ? Math.round((ts.correct / total) * 100) : 0;
+    return `
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:var(--text-sm);font-weight:600;">${topic}</span>
+          <span style="font-size:var(--text-sm);color:${pct >= 70 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--error)'};">${pct}%</span>
+        </div>
+        <div class="progress-bar-wrapper">
+          <div class="progress-bar-fill" style="width:${pct}%;background:${pct >= 70 ? 'var(--success)' : pct >= 50 ? 'linear-gradient(90deg,var(--warning),var(--accent-primary))' : 'var(--error)'};"></div>
+        </div>
+        <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:2px;">
+          ${ts.correct} correct · ${ts.wrong} wrong · ${ts.unanswered} unanswered
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Weak areas
+  if (wrongQs.length > 0) {
+    document.getElementById('weak-areas-card').style.display = 'block';
+    const weakTopics = [...new Set(wrongQs.map(q => q.topic))];
+    document.getElementById('weak-areas-list').innerHTML = weakTopics.map(t => `
+      <span class="badge badge-error" style="margin:4px;">${t}</span>
+    `).join('');
+    Toast.show(`${wrongQs.length} questions added to revision queue`, 'info');
+  }
+}
+</script>
+</body>
+</html>

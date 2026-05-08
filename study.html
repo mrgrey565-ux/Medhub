@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedStudy Hub — Study Mode</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <div class="sidebar" id="sidebar"></div>
+
+  <main class="main-content" id="main-content">
+    <div class="content-wrapper">
+
+      <div class="page-header">
+        <div class="page-title">📚 Study Mode</div>
+        <div class="page-subtitle">Self-paced MCQ practice with instant AI explanations</div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="card mb-6" id="filter-bar">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;flex-wrap:wrap;">
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Topic</label>
+            <select class="form-select" id="filter-topic">
+              <option value="All Topics">All Topics</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Subject</label>
+            <select class="form-select" id="filter-subject">
+              <option value="All Subjects">All Subjects</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Difficulty</label>
+            <select class="form-select" id="filter-difficulty">
+              <option value="all">All Levels</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="start-session-btn" style="height:42px;">
+            ▶ Start
+          </button>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;align-items:center;">
+          <span style="font-size:var(--text-sm);color:var(--text-muted);" id="q-count-label">Loading questions...</span>
+          <button class="btn btn-secondary btn-sm" id="shuffle-btn">🔀 Shuffle</button>
+          <button class="btn btn-secondary btn-sm" id="generate-btn">🤖 Generate AI Questions</button>
+        </div>
+      </div>
+
+      <!-- Session Stats Bar -->
+      <div id="session-stats" style="display:none;margin-bottom:20px;">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+          <div class="stat-card" style="padding:14px;">
+            <div class="stat-value" id="ss-attempted" style="font-size:var(--text-2xl);">0</div>
+            <div class="stat-label">Attempted</div>
+          </div>
+          <div class="stat-card" style="padding:14px;">
+            <div class="stat-value" id="ss-correct" style="font-size:var(--text-2xl);">0</div>
+            <div class="stat-label">Correct</div>
+          </div>
+          <div class="stat-card" style="padding:14px;">
+            <div class="stat-value" id="ss-accuracy" style="font-size:var(--text-2xl);">0%</div>
+            <div class="stat-label">Accuracy</div>
+          </div>
+          <div class="stat-card" style="padding:14px;">
+            <div class="stat-value" id="ss-time" style="font-size:var(--text-2xl);">00:00</div>
+            <div class="stat-label">Time</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Question Area -->
+      <div id="question-area" style="display:none;">
+        <!-- Progress -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <span class="question-number" id="progress-label">Question 1 of 20</span>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" id="flag-btn" title="Flag for revision">🚩 Flag</button>
+            <button class="btn btn-ghost btn-sm" id="end-session-btn">⏹ End Session</button>
+          </div>
+        </div>
+        <div class="progress-bar-wrapper" style="margin-bottom:20px;">
+          <div class="progress-bar-fill" id="progress-fill" style="width:0%;"></div>
+        </div>
+
+        <!-- Question Card -->
+        <div class="question-card" id="question-card">
+          <div class="question-number" id="q-number">Question 1</div>
+          <div class="question-text" id="q-text">Loading...</div>
+
+          <div class="options-list" id="options-list"></div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-primary" id="submit-btn" disabled>Submit Answer</button>
+            <button class="btn btn-secondary" id="next-btn" style="display:none;">Next Question →</button>
+            <button class="btn btn-ghost btn-sm" id="ai-explain-btn" style="display:none;">🤖 AI Explain</button>
+          </div>
+
+          <!-- Explanation -->
+          <div class="explanation-box" id="explanation-box" style="display:none;">
+            <h4>📖 Explanation</h4>
+            <p id="explanation-text"></p>
+            <div id="ai-explanation-area" style="margin-top:12px;display:none;">
+              <div style="font-size:var(--text-xs);font-weight:700;color:var(--accent-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">🤖 AI Explanation (from your notes)</div>
+              <p id="ai-explanation-text" style="font-style:italic;color:var(--text-secondary);"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty / Done State -->
+      <div id="empty-state" class="empty-state">
+        <div class="empty-state-icon">📚</div>
+        <div class="empty-state-title">Ready to Study?</div>
+        <div class="empty-state-desc">Select your filters above and click "Start" to begin a session.</div>
+      </div>
+
+      <!-- Session Complete -->
+      <div id="session-complete" style="display:none;">
+        <div class="card text-center" style="max-width:500px;margin:0 auto;">
+          <div style="font-size:56px;margin-bottom:16px;">🎉</div>
+          <div class="card-title" style="font-size:var(--text-2xl);margin-bottom:8px;">Session Complete!</div>
+          <div style="margin-bottom:24px;">
+            <div class="stat-value" id="final-score" style="font-size:var(--text-4xl);">0/0</div>
+            <div class="stat-label">Final Score</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">
+            <div style="background:var(--bg-elevated);padding:16px;border-radius:var(--border-radius-sm);">
+              <div style="font-size:var(--text-2xl);font-weight:800;color:var(--success);" id="final-correct">0</div>
+              <div class="stat-label">Correct</div>
+            </div>
+            <div style="background:var(--bg-elevated);padding:16px;border-radius:var(--border-radius-sm);">
+              <div style="font-size:var(--text-2xl);font-weight:800;color:var(--accent-primary);" id="final-accuracy">0%</div>
+              <div class="stat-label">Accuracy</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+            <button class="btn btn-primary" id="restart-btn">🔄 Study Again</button>
+            <a href="revision.html" class="btn btn-secondary">🔁 Review Flagged</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Generate Modal -->
+      <div class="modal-overlay hidden" id="generate-modal">
+        <div class="modal-box">
+          <button class="modal-close" id="close-generate-modal">✕</button>
+          <div class="modal-title">🤖 Generate AI Questions</div>
+          <div class="modal-subtitle">Enter a topic and the AI will create 10 new MCQs from your uploaded notes.</div>
+          <div class="form-group">
+            <label class="form-label">Topic</label>
+            <input type="text" class="form-input" id="gen-topic-input" placeholder="e.g., Cardiac Action Potential">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Number of Questions</label>
+            <select class="form-select" id="gen-count-select">
+              <option value="5">5 Questions</option>
+              <option value="10" selected>10 Questions</option>
+              <option value="15">15 Questions</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-full" id="generate-confirm-btn">
+            🚀 Generate Questions
+          </button>
+          <div id="gen-loading" style="display:none;text-align:center;margin-top:16px;">
+            <div class="spinner" style="margin:0 auto 8px;"></div>
+            <p style="color:var(--text-muted);font-size:var(--text-sm);">AI is generating questions from your notes...</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav" id="bottom-nav"></nav>
+
+<script src="js/core.js"></script>
+<script src="js/quiz-engine.js"></script>
+<script src="js/revision-engine.js"></script>
+<script>
+let timerInterval = null;
+let currentQuestion = null;
+let shuffleEnabled = false;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  Storage.set('medhub_last_study', new Date().toISOString());
+
+  await QuizEngine.loadQuestions();
+
+  // Populate filters
+  const topics = QuizEngine.getTopics();
+  const topicSelect = document.getElementById('filter-topic');
+  topics.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t;
+    topicSelect.appendChild(opt);
+  });
+
+  const subjects = QuizEngine.getSubjects();
+  const subjectSelect = document.getElementById('filter-subject');
+  subjects.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = s;
+    subjectSelect.appendChild(opt);
+  });
+
+  updateQCount();
+
+  // Event listeners
+  document.getElementById('filter-topic').addEventListener('change', updateQCount);
+  document.getElementById('filter-subject').addEventListener('change', updateQCount);
+  document.getElementById('filter-difficulty').addEventListener('change', updateQCount);
+  document.getElementById('start-session-btn').addEventListener('click', startSession);
+  document.getElementById('shuffle-btn').addEventListener('click', () => {
+    shuffleEnabled = !shuffleEnabled;
+    const btn = document.getElementById('shuffle-btn');
+    btn.textContent = shuffleEnabled ? '🔀 Shuffled ✓' : '🔀 Shuffle';
+    btn.style.borderColor = shuffleEnabled ? 'var(--accent-primary)' : '';
+    updateQCount();
+  });
+
+  document.getElementById('generate-btn').addEventListener('click', () => {
+    document.getElementById('generate-modal').classList.remove('hidden');
+  });
+
+  document.getElementById('close-generate-modal').addEventListener('click', () => {
+    document.getElementById('generate-modal').classList.add('hidden');
+  });
+
+  document.getElementById('generate-confirm-btn').addEventListener('click', generateAIQuestions);
+  document.getElementById('submit-btn').addEventListener('click', submitAnswer);
+  document.getElementById('next-btn').addEventListener('click', nextQuestion);
+  document.getElementById('flag-btn').addEventListener('click', flagForRevision);
+  document.getElementById('end-session-btn').addEventListener('click', endSession);
+  document.getElementById('ai-explain-btn').addEventListener('click', fetchAIExplanation);
+  document.getElementById('restart-btn').addEventListener('click', () => {
+    document.getElementById('session-complete').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('filter-bar').style.display = 'block';
+    stopTimer();
+  });
+});
+
+function updateQCount() {
+  const t = document.getElementById('filter-topic').value;
+  const s = document.getElementById('filter-subject').value;
+  const d = document.getElementById('filter-difficulty').value;
+  const filtered = QuizEngine.filterQuestions(t, s, d);
+  const label = document.getElementById('q-count-label');
+  if (label) label.textContent = `${filtered.length} question${filtered.length !== 1 ? 's' : ''} available`;
+}
+
+function startSession() {
+  const t = document.getElementById('filter-topic').value;
+  const s = document.getElementById('filter-subject').value;
+  const d = document.getElementById('filter-difficulty').value;
+  let questions = QuizEngine.filterQuestions(t, s, d);
+
+  if (questions.length === 0) {
+    Toast.show('No questions match your filters. Try loading more questions.', 'warning');
+    return;
+  }
+
+  if (shuffleEnabled) questions = QuizEngine.shuffle(questions);
+
+  QuizEngine.startSession(questions);
+  StudyStats.recordSession();
+
+  document.getElementById('filter-bar').style.display = 'none';
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('session-complete').style.display = 'none';
+  document.getElementById('question-area').style.display = 'block';
+  document.getElementById('session-stats').style.display = 'block';
+
+  startTimer();
+  renderQuestion();
+}
+
+function renderQuestion() {
+  currentQuestion = QuizEngine.currentQuestion();
+  if (!currentQuestion) { endSession(); return; }
+
+  const total = QuizEngine.currentSession.length;
+  const idx = QuizEngine.currentIndex;
+
+  document.getElementById('q-number').textContent = `Question ${idx + 1}`;
+  document.getElementById('progress-label').textContent = `Question ${idx + 1} of ${total}`;
+  document.getElementById('q-text').textContent = currentQuestion.question;
+
+  // Progress bar
+  const pct = ((idx) / total) * 100;
+  document.getElementById('progress-fill').style.width = `${pct}%`;
+
+  // Options
+  const optList = document.getElementById('options-list');
+  optList.innerHTML = '';
+  ['A', 'B', 'C', 'D'].forEach(letter => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.dataset.letter = letter;
+    btn.innerHTML = `<span class="option-letter">${letter}</span><span>${currentQuestion.options[letter]}</span>`;
+    btn.addEventListener('click', () => selectOption(letter));
+    optList.appendChild(btn);
+  });
+
+  // Reset UI
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('submit-btn').style.display = 'inline-flex';
+  document.getElementById('next-btn').style.display = 'none';
+  document.getElementById('ai-explain-btn').style.display = 'none';
+  document.getElementById('explanation-box').style.display = 'none';
+  document.getElementById('ai-explanation-area').style.display = 'none';
+  document.getElementById('explanation-text').textContent = '';
+
+  updateSessionStats();
+}
+
+function selectOption(letter) {
+  if (QuizEngine.answered) return;
+  QuizEngine.selectAnswer(letter);
+
+  document.querySelectorAll('.option-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.letter === letter);
+  });
+
+  document.getElementById('submit-btn').disabled = false;
+}
+
+function submitAnswer() {
+  const result = QuizEngine.submitAnswer();
+  if (!result) return;
+
+  // Color options
+  document.querySelectorAll('.option-btn').forEach(btn => {
+    const letter = btn.dataset.letter;
+    btn.disabled = true;
+    if (letter === result.correct) btn.classList.add('correct');
+    else if (letter === QuizEngine.selectedAnswer && !result.isCorrect) btn.classList.add('incorrect');
+  });
+
+  // Show explanation
+  document.getElementById('explanation-text').textContent = result.explanation || 'No explanation available.';
+  document.getElementById('explanation-box').style.display = 'block';
+
+  document.getElementById('submit-btn').style.display = 'none';
+  document.getElementById('next-btn').style.display = 'inline-flex';
+  document.getElementById('ai-explain-btn').style.display = 'inline-flex';
+
+  updateSessionStats();
+}
+
+function nextQuestion() {
+  const hasNext = QuizEngine.nextQuestion();
+  if (hasNext) {
+    renderQuestion();
+  } else {
+    showSessionComplete();
+  }
+}
+
+function flagForRevision() {
+  if (!currentQuestion) return;
+  QuizEngine.flagForRevision(currentQuestion.id);
+}
+
+async function fetchAIExplanation() {
+  if (!currentQuestion) return;
+  const btn = document.getElementById('ai-explain-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Loading...';
+
+  const aiArea = document.getElementById('ai-explanation-area');
+  const aiText = document.getElementById('ai-explanation-text');
+  aiArea.style.display = 'block';
+  aiText.textContent = 'Fetching AI explanation from your notes...';
+
+  const explanation = await QuizEngine.getAIExplanation(currentQuestion);
+  if (explanation) {
+    aiText.textContent = explanation;
+  } else {
+    aiText.textContent = 'Could not fetch AI explanation. Check your API key and uploaded notes.';
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🤖 AI Explain';
+}
+
+function endSession() {
+  showSessionComplete();
+}
+
+function showSessionComplete() {
+  stopTimer();
+  document.getElementById('question-area').style.display = 'none';
+  document.getElementById('session-stats').style.display = 'none';
+  document.getElementById('session-complete').style.display = 'block';
+
+  const stats = QuizEngine.sessionStats;
+  const correct = stats.correct;
+  const attempted = stats.attempted;
+  const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
+
+  document.getElementById('final-score').textContent = `${correct}/${attempted}`;
+  document.getElementById('final-correct').textContent = correct;
+  document.getElementById('final-accuracy').textContent = `${accuracy}%`;
+}
+
+function updateSessionStats() {
+  document.getElementById('ss-attempted').textContent = QuizEngine.sessionStats.attempted;
+  document.getElementById('ss-correct').textContent = QuizEngine.sessionStats.correct;
+  document.getElementById('ss-accuracy').textContent = `${QuizEngine.getAccuracy()}%`;
+}
+
+function startTimer() {
+  stopTimer();
+  timerInterval = setInterval(() => {
+    document.getElementById('ss-time').textContent = QuizEngine.getElapsed();
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+async function generateAIQuestions() {
+  const topic = document.getElementById('gen-topic-input').value.trim();
+  const count = parseInt(document.getElementById('gen-count-select').value, 10);
+
+  if (!topic) {
+    Toast.show('Please enter a topic', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('generate-confirm-btn');
+  const loadingEl = document.getElementById('gen-loading');
+  btn.style.display = 'none';
+  loadingEl.style.display = 'block';
+
+  const newQs = await QuizEngine.generateAIQuestions(topic, count);
+
+  btn.style.display = 'block';
+  loadingEl.style.display = 'none';
+
+  if (newQs.length > 0) {
+    document.getElementById('generate-modal').classList.add('hidden');
+    document.getElementById('gen-topic-input').value = '';
+
+    // Refresh topic filter
+    const topicSelect = document.getElementById('filter-topic');
+    const existingTopics = Array.from(topicSelect.options).map(o => o.value);
+    if (!existingTopics.includes(topic)) {
+      const opt = document.createElement('option');
+      opt.value = topic;
+      opt.textContent = topic;
+      topicSelect.appendChild(opt);
+    }
+    updateQCount();
+  }
+}
+</script>
+</body>
+</html>

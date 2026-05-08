@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedStudy Hub — HEKO Session</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .phase-card {
+      animation: fadeSlideUp 0.4s ease;
+      min-height: 350px;
+    }
+    .rapid-option {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 14px; background: var(--bg-elevated);
+      border: 2px solid var(--border-subtle); border-radius: var(--border-radius-sm);
+      cursor: pointer; transition: all var(--transition); margin-bottom: 8px;
+      text-align: left; width: 100%; color: var(--text-primary); font-size: var(--text-sm);
+    }
+    .rapid-option:hover:not(:disabled) { border-color: var(--accent-primary); }
+    .rapid-option.correct { border-color: var(--success); background: rgba(34,197,94,0.1); }
+    .rapid-option.incorrect { border-color: var(--error); background: rgba(239,68,68,0.1); }
+    .rapid-option.selected { border-color: var(--accent-primary); background: rgba(14,165,233,0.1); }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="sidebar" id="sidebar"></div>
+
+  <main class="main-content" id="main-content">
+    <div class="content-wrapper" style="max-width:800px;">
+
+      <div class="page-header">
+        <div class="page-title">⚡ HEKO Daily Session</div>
+        <div class="page-subtitle">10 minutes · 3 phases · 1 essential topic</div>
+      </div>
+
+      <!-- Already Completed State -->
+      <div id="completed-state" style="display:none;">
+        <div class="card text-center mb-6" style="background:linear-gradient(135deg,rgba(34,197,94,0.1),rgba(16,185,129,0.05));border-color:rgba(34,197,94,0.3);">
+          <div style="font-size:56px;margin-bottom:16px;">✅</div>
+          <div class="card-title" style="font-size:var(--text-2xl);margin-bottom:8px;">Session Complete!</div>
+          <div class="streak-display" style="justify-content:center;margin:16px auto;">
+            🔥 <span id="completed-streak">0</span> Day Streak
+          </div>
+          <div style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:24px;" id="completed-topic-text"></div>
+          <div class="card" style="margin-bottom:16px;text-align:left;">
+            <div class="card-title" style="margin-bottom:8px;">🌅 Tomorrow's Topic</div>
+            <div style="font-weight:700;font-size:var(--text-lg);" id="tomorrow-topic"></div>
+          </div>
+          <button class="btn btn-primary" id="retake-btn">🔄 Review Again</button>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:16px;">📅 Last 7 Days</div>
+          <div id="history-grid" style="display:flex;gap:12px;justify-content:center;"></div>
+        </div>
+      </div>
+
+      <!-- Pre-Session State -->
+      <div id="pre-session" style="display:block;">
+        <div class="card mb-6" style="background:linear-gradient(135deg,rgba(14,165,233,0.1),rgba(16,185,129,0.05));border-color:rgba(14,165,233,0.25);">
+          <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+            <div style="font-size:56px;">🧠</div>
+            <div style="flex:1;">
+              <div style="font-size:var(--text-sm);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Today's Fundamental</div>
+              <div style="font-size:var(--text-2xl);font-weight:800;color:var(--text-primary);" id="today-topic">Loading...</div>
+              <div style="margin-top:8px;" id="pre-streak-display"></div>
+            </div>
+            <div>
+              <button class="btn btn-primary btn-lg" id="begin-session-btn">▶ Begin Session</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
+          <div class="card text-center">
+            <div style="font-size:32px;margin-bottom:8px;">🧠</div>
+            <div style="font-weight:700;margin-bottom:4px;">Phase 1</div>
+            <div style="font-size:var(--text-sm);color:var(--text-muted);">Core Concept (3 min)</div>
+          </div>
+          <div class="card text-center">
+            <div style="font-size:32px;margin-bottom:8px;">⚡</div>
+            <div style="font-weight:700;margin-bottom:4px;">Phase 2</div>
+            <div style="font-size:var(--text-sm);color:var(--text-muted);">5 Rapid MCQs (4 min)</div>
+          </div>
+          <div class="card text-center">
+            <div style="font-size:32px;margin-bottom:8px;">🎯</div>
+            <div style="font-weight:700;margin-bottom:4px;">Phase 3</div>
+            <div style="font-size:var(--text-sm);color:var(--text-muted);">Key Takeaways (3 min)</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="margin-bottom:16px;">📅 Last 7 Days</div>
+          <div id="pre-history-grid" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;"></div>
+        </div>
+      </div>
+
+      <!-- Active Session -->
+      <div id="active-session" style="display:none;">
+        <!-- Timer -->
+        <div class="card mb-4" style="text-align:center;">
+          <div class="phase-dots" id="phase-dots">
+            <div class="phase-dot" id="dot-1"></div>
+            <div class="phase-dot" id="dot-2"></div>
+            <div class="phase-dot" id="dot-3"></div>
+          </div>
+          <div style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:8px;" id="phase-label">Phase 1 of 3</div>
+          <div class="timer-ring-container" style="margin:0 auto 16px;">
+            <svg class="timer-ring-svg" width="120" height="120" viewBox="0 0 120 120">
+              <defs>
+                <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style="stop-color:var(--accent-primary)"/>
+                  <stop offset="100%" style="stop-color:var(--accent-secondary)"/>
+                </linearGradient>
+              </defs>
+              <circle class="timer-ring-bg" cx="60" cy="60" r="50"/>
+              <circle class="timer-ring-fill" cx="60" cy="60" r="50" id="timer-ring"/>
+            </svg>
+            <div class="timer-text">
+              <div class="timer-display" id="timer-display">3:00</div>
+              <div class="timer-label" id="timer-label">remaining</div>
+            </div>
+          </div>
+          <div style="font-weight:700;font-size:var(--text-lg);margin-bottom:4px;" id="phase-name-display">Core Concept</div>
+          <div style="font-size:var(--text-sm);color:var(--text-muted);" id="session-topic-display"></div>
+        </div>
+
+        <!-- Phase Content -->
+        <div id="phase-content-area"></div>
+
+        <!-- Navigation -->
+        <div style="display:flex;gap:12px;justify-content:space-between;margin-top:20px;">
+          <button class="btn btn-ghost" id="skip-phase-btn">Skip Phase →</button>
+          <button class="btn btn-danger" id="abort-session-btn">✕ Abort Session</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav" id="bottom-nav"></nav>
+
+<script src="js/core.js"></script>
+<script src="js/heko-engine.js"></script>
+<script>
+let currentPhase = 1;
+let phaseTimer = null;
+let phaseTimeRemaining = 0;
+let phaseTotal = 0;
+let sessionScore = 0;
+let totalMCQs = 0;
+let correctMCQs = 0;
+let todayTopic = '';
+let rapidMCQs = [];
+let currentMCQIdx = 0;
+let selectedMCQAnswer = null;
+let mcqAnswered = false;
+
+document.addEventListener('DOMContentLoaded', () => {
+  todayTopic = HekoEngine.getTodaysTopic();
+  document.getElementById('today-topic').textContent = todayTopic;
+
+  const streak = StreakManager.get();
+  const preStreak = document.getElementById('pre-streak-display');
+  if (preStreak) {
+    preStreak.innerHTML = `<div class="streak-display" style="display:inline-flex;">🔥 ${streak.count} Day Streak</div>`;
+  }
+
+  // Check if already completed
+  if (HekoEngine.isCompletedToday()) {
+    showCompletedState();
+  } else {
+    renderHistoryGrid('pre-history-grid');
+  }
+
+  document.getElementById('begin-session-btn').addEventListener('click', beginSession);
+  document.getElementById('skip-phase-btn').addEventListener('click', advancePhase);
+  document.getElementById('abort-session-btn').addEventListener('click', () => {
+    if (confirm('Abort this session?')) {
+      clearInterval(phaseTimer);
+      document.getElementById('active-session').style.display = 'none';
+      document.getElementById('pre-session').style.display = 'block';
+    }
+  });
+  document.getElementById('retake-btn') && document.getElementById('retake-btn').addEventListener('click', () => {
+    document.getElementById('completed-state').style.display = 'none';
+    document.getElementById('pre-session').style.display = 'block';
+    renderHistoryGrid('pre-history-grid');
+  });
+});
+
+function showCompletedState() {
+  document.getElementById('pre-session').style.display = 'none';
+  document.getElementById('completed-state').style.display = 'block';
+
+  const streak = StreakManager.get();
+  document.getElementById('completed-streak').textContent = streak.count;
+  document.getElementById('completed-topic-text').textContent = `You completed: ${todayTopic}`;
+  document.getElementById('tomorrow-topic').textContent = HekoEngine.getTomorrowsTopic();
+  renderHistoryGrid('history-grid');
+}
+
+function renderHistoryGrid(containerId) {
+  const days = HekoEngine.getLast7Days();
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = days.map(day => `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+      <div style="
+        width:40px;height:40px;border-radius:50%;
+        background:${day.completed ? 'var(--success)' : 'var(--bg-elevated)'};
+        border:2px solid ${day.completed ? 'var(--success)' : 'var(--border-subtle)'};
+        display:flex;align-items:center;justify-content:center;
+        font-size:16px;
+      " title="${day.date}${day.topic ? ': ' + day.topic : ''}">
+        ${day.completed ? '✓' : ''}
+      </div>
+      <span style="font-size:var(--text-xs);color:var(--text-muted);">${day.dayName}</span>
+    </div>
+  `).join('');
+}
+
+async function beginSession() {
+  document.getElementById('pre-session').style.display = 'none';
+  document.getElementById('active-session').style.display = 'block';
+  document.getElementById('session-topic-display').textContent = todayTopic;
+  sessionScore = 0; correctMCQs = 0; totalMCQs = 0;
+
+  await startPhase(1);
+}
+
+async function startPhase(phase) {
+  currentPhase = phase;
+  clearInterval(phaseTimer);
+
+  // Update dots
+  [1, 2, 3].forEach(i => {
+    const dot = document.getElementById(`dot-${i}`);
+    dot.className = 'phase-dot';
+    if (i < phase) dot.classList.add('complete');
+    else if (i === phase) dot.classList.add('active');
+  });
+
+  const phaseInfo = HekoEngine.phases[phase - 1];
+  phaseTotal = phaseInfo.duration;
+  phaseTimeRemaining = phaseInfo.duration;
+
+  document.getElementById('phase-label').textContent = `Phase ${phase} of 3`;
+  document.getElementById('phase-name-display').textContent = `${phaseInfo.icon} ${phaseInfo.name}`;
+
+  updateTimerDisplay(phaseTimeRemaining, phaseTotal);
+
+  // Load phase content
+  const contentArea = document.getElementById('phase-content-area');
+  contentArea.innerHTML = `
+    <div class="card phase-card" style="text-align:center;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+      <div class="spinner spinner-lg" style="margin-bottom:16px;"></div>
+      <p style="color:var(--text-muted);">AI is preparing ${phaseInfo.name}...</p>
+    </div>
+  `;
+
+  let content = null;
+
+  if (phase === 1) {
+    content = await HekoEngine.generateCoreConcept(todayTopic);
+    renderPhase1(content);
+  } else if (phase === 2) {
+    rapidMCQs = await HekoEngine.generateRapidMCQs(todayTopic);
+    currentMCQIdx = 0;
+    selectedMCQAnswer = null;
+    mcqAnswered = false;
+    if (rapidMCQs.length > 0) {
+      totalMCQs = rapidMCQs.length;
+      renderMCQ(rapidMCQs[0]);
+    } else {
+      renderPhaseError('Could not generate MCQs. Check API key and notes.');
+    }
+  } else if (phase === 3) {
+    content = await HekoEngine.generateTakeaways(todayTopic);
+    renderPhase3(content);
+  }
+
+  // Start countdown timer
+  startPhaseTimer();
+}
+
+function startPhaseTimer() {
+  clearInterval(phaseTimer);
+  phaseTimer = setInterval(() => {
+    phaseTimeRemaining--;
+    updateTimerDisplay(phaseTimeRemaining, phaseTotal);
+    if (phaseTimeRemaining <= 0) {
+      clearInterval(phaseTimer);
+      advancePhase();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay(remaining, total) {
+  const m = Math.floor(remaining / 60).toString().padStart(2, '0');
+  const s = (remaining % 60).toString().padStart(2, '0');
+  document.getElementById('timer-display').textContent = `${m}:${s}`;
+
+  // Ring progress
+  const circ = 2 * Math.PI * 50; // 314.16
+  const offset = circ - (remaining / total) * circ;
+  const ring = document.getElementById('timer-ring');
+  if (ring) {
+    ring.style.strokeDasharray = circ;
+    ring.style.strokeDashoffset = offset;
+  }
+}
+
+function advancePhase() {
+  clearInterval(phaseTimer);
+  if (currentPhase < 3) {
+    startPhase(currentPhase + 1);
+  } else {
+    completeSession();
+  }
+}
+
+function renderPhase1(content) {
+  const contentArea = document.getElementById('phase-content-area');
+  if (!content) {
+    renderPhaseError('Could not generate core concept. Check API key and uploaded notes.');
+    return;
+  }
+  contentArea.innerHTML = `
+    <div class="card phase-card">
+      <div class="card-title" style="margin-bottom:16px;">🧠 Core Concept: ${todayTopic}</div>
+      <div class="notes-content">${renderMarkdown(content)}</div>
+    </div>
+  `;
+}
+
+function renderMCQ(mcq) {
+  const contentArea = document.getElementById('phase-content-area');
+  const idx = currentMCQIdx + 1;
+
+  contentArea.innerHTML = `
+    <div class="card phase-card">
+      <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
+        <div class="question-number">MCQ ${idx} of ${rapidMCQs.length}</div>
+        <div style="font-size:var(--text-sm);color:${correctMCQs > 0 ? 'var(--success)' : 'var(--text-muted)'};">
+          ✓ ${correctMCQs}/${Math.max(0,idx-1)} correct
+        </div>
+      </div>
+      <div class="question-text" style="font-size:var(--text-base);">${mcq.question}</div>
+      <div id="rapid-options">
+        ${['A','B','C','D'].map(letter => `
+          <button class="rapid-option" data-letter="${letter}" onclick="selectRapidOption('${letter}')">
+            <span class="option-letter" style="min-width:24px;height:24px;font-size:12px;">${letter}</span>
+            <span>${mcq.options[letter]}</span>
+          </button>
+        `).join('')}
+      </div>
+      <div id="rapid-feedback" style="display:none;margin-top:12px;padding:12px;border-radius:var(--border-radius-sm);">
+        <div id="rapid-result-label" style="font-weight:700;margin-bottom:4px;"></div>
+        <div id="rapid-explanation" style="font-size:var(--text-sm);color:var(--text-secondary);"></div>
+        <button class="btn btn-primary btn-sm" id="rapid-next-btn" style="margin-top:10px;"
+                onclick="nextRapidMCQ()">
+          ${currentMCQIdx + 1 < rapidMCQs.length ? 'Next Question →' : 'Complete MCQs ✓'}
+        </button>
+      </div>
+    </div>
+  `;
+  mcqAnswered = false;
+  selectedMCQAnswer = null;
+}
+
+function selectRapidOption(letter) {
+  if (mcqAnswered) return;
+  mcqAnswered = true;
+  selectedMCQAnswer = letter;
+
+  const mcq = rapidMCQs[currentMCQIdx];
+  const isCorrect = letter === mcq.correct;
+  if (isCorrect) correctMCQs++;
+
+  // Style options
+  document.querySelectorAll('.rapid-option').forEach(btn => {
+    btn.disabled = true;
+    if (btn.dataset.letter === mcq.correct) btn.classList.add('correct');
+    else if (btn.dataset.letter === letter && !isCorrect) btn.classList.add('incorrect');
+  });
+
+  // Show feedback
+  const feedback = document.getElementById('rapid-feedback');
+  feedback.style.display = 'block';
+  feedback.style.background = isCorrect ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)';
+  document.getElementById('rapid-result-label').textContent =
+    isCorrect ? '✅ Correct!' : `❌ Incorrect — Correct: ${mcq.correct}`;
+  document.getElementById('rapid-result-label').style.color = isCorrect ? 'var(--success)' : 'var(--error)';
+  document.getElementById('rapid-explanation').textContent = mcq.explanation || '';
+}
+
+function nextRapidMCQ() {
+  currentMCQIdx++;
+  if (currentMCQIdx < rapidMCQs.length) {
+    renderMCQ(rapidMCQs[currentMCQIdx]);
+  } else {
+    // MCQ phase done — show score briefly then advance
+    const contentArea = document.getElementById('phase-content-area');
+    contentArea.innerHTML = `
+      <div class="card phase-card text-center" style="justify-content:center;display:flex;flex-direction:column;align-items:center;">
+        <div style="font-size:48px;margin-bottom:16px;">${correctMCQs >= totalMCQs * 0.6 ? '🎉' : '💪'}</div>
+        <div style="font-size:var(--text-2xl);font-weight:800;margin-bottom:8px;">
+          ${correctMCQs} / ${totalMCQs} Correct
+        </div>
+        <div style="color:var(--text-muted);">Great effort! Moving to takeaways...</div>
+      </div>
+    `;
+    setTimeout(() => advancePhase(), 2000);
+  }
+}
+
+function renderPhase3(content) {
+  const contentArea = document.getElementById('phase-content-area');
+  if (!content) {
+    renderPhaseError('Could not generate takeaways.');
+    return;
+  }
+  contentArea.innerHTML = `
+    <div class="card phase-card">
+      <div class="card-title" style="margin-bottom:16px;">🎯 Key Takeaways: ${todayTopic}</div>
+      <div class="notes-content">${renderMarkdown(content)}</div>
+    </div>
+  `;
+}
+
+function renderPhaseError(msg) {
+  const contentArea = document.getElementById('phase-content-area');
+  contentArea.innerHTML = `
+    <div class="card phase-card text-center" style="display:flex;align-items:center;justify-content:center;flex-direction:column;">
+      <div style="font-size:40px;margin-bottom:12px;">⚠️</div>
+      <div style="color:var(--error);margin-bottom:16px;">${msg}</div>
+      <button class="btn btn-primary" onclick="advancePhase()">Skip to Next Phase →</button>
+    </div>
+  `;
+}
+
+function completeSession() {
+  clearInterval(phaseTimer);
+  const score = totalMCQs > 0 ? Math.round((correctMCQs / totalMCQs) * 100) : 0;
+  HekoEngine.completeSession(todayTopic, score);
+
+  document.getElementById('active-session').style.display = 'none';
+  showCompletedState();
+  Toast.show('🎉 HEKO session complete! Streak updated.', 'success');
+}
+</script>
+</body>
+</html>

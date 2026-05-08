@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedStudy Hub — Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0A0F1E">
+</head>
+<body>
+<div class="app-shell">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- Main Content -->
+  <main class="main-content" id="main-content">
+    <div class="content-wrapper">
+
+      <!-- Greeting Hero -->
+      <div class="greeting-hero" id="greeting-hero">
+        <div class="greeting-date" id="greeting-date"></div>
+        <div class="greeting-text">Good <span id="time-of-day">Morning</span>, <span id="student-name">Doctor</span> 👋</div>
+        <div style="margin-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div class="streak-display" id="streak-display">
+            🔥 <span id="streak-count">0</span> Day Streak
+          </div>
+          <div id="api-status-hero" class="api-status disconnected" onclick="AIClient.promptForKey()" style="cursor:pointer;">
+            <span class="status-dot"></span>
+            <span id="api-status-text">Set API Key</span>
+          </div>
+          <div id="exam-countdown" style="display:none;" class="badge badge-warning">
+            📅 <span id="countdown-text"></span> days to exam
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="stats-row" id="stats-row">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-answered">0</div>
+          <div class="stat-label">MCQs Answered</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-accuracy">0%</div>
+          <div class="stat-label">Accuracy</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-notes">0</div>
+          <div class="stat-label">Notes Generated</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-due">0</div>
+          <div class="stat-label">Cards Due</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-files">0</div>
+          <div class="stat-label">Notes Files</div>
+        </div>
+      </div>
+
+      <!-- Today's HEKO Preview -->
+      <div class="card mb-6" id="heko-preview-card" style="background:linear-gradient(135deg,rgba(14,165,233,0.08),rgba(16,185,129,0.05));border-color:rgba(14,165,233,0.25);">
+        <div class="card-header">
+          <div>
+            <div class="card-title">⚡ Today's HEKO Session</div>
+            <div class="card-subtitle" id="heko-status-text">Daily 10-minute fundamental review</div>
+          </div>
+          <a href="heko.html" class="btn btn-primary btn-sm" id="heko-start-btn">Start Session</a>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="font-size:32px;">🧠</div>
+          <div>
+            <div style="font-weight:700;color:var(--text-primary);font-size:var(--text-lg);" id="heko-topic-name">Loading...</div>
+            <div style="font-size:var(--text-sm);color:var(--text-muted);">Today's fundamental topic</div>
+          </div>
+        </div>
+        <div id="heko-day-dots" style="display:flex;gap:6px;margin-top:16px;"></div>
+      </div>
+
+      <!-- Module Cards -->
+      <div class="section-title">📚 Study Modules</div>
+      <div class="module-grid" id="module-grid">
+        <a href="study.html" class="module-card" style="animation-delay:0.05s">
+          <div class="module-card-icon" style="background:rgba(14,165,233,0.15);">📚</div>
+          <div class="module-card-title">Study Mode</div>
+          <div class="module-card-desc">Self-paced MCQ practice with instant feedback and AI explanations</div>
+          <div class="flex items-center justify-between">
+            <div class="module-card-meta" id="study-last-used">Never used</div>
+            <div class="badge badge-primary">Practice</div>
+          </div>
+        </a>
+
+        <a href="exam.html" class="module-card" style="animation-delay:0.1s">
+          <div class="module-card-icon" style="background:rgba(239,68,68,0.15);">📝</div>
+          <div class="module-card-title">Exam Simulator</div>
+          <div class="module-card-desc">Timed exam conditions — University or NEET PG format</div>
+          <div class="flex items-center justify-between">
+            <div class="module-card-meta" id="exam-last-used">Never used</div>
+            <div class="badge badge-error">Exam Mode</div>
+          </div>
+        </a>
+
+        <a href="notes.html" class="module-card" style="animation-delay:0.15s">
+          <div class="module-card-icon" style="background:rgba(16,185,129,0.15);">🤖</div>
+          <div class="module-card-title">AI Notes</div>
+          <div class="module-card-desc">Generate structured study notes from your uploaded content</div>
+          <div class="flex items-center justify-between">
+            <div class="module-card-meta" id="notes-count-text">0 notes saved</div>
+            <div class="badge badge-success">AI-Powered</div>
+          </div>
+        </a>
+
+        <a href="heko.html" class="module-card" style="animation-delay:0.2s">
+          <div class="module-card-icon" style="background:rgba(245,158,11,0.15);">⚡</div>
+          <div class="module-card-title">HEKO Daily</div>
+          <div class="module-card-desc">10-minute daily fundamental concept sessions</div>
+          <div class="flex items-center justify-between">
+            <div class="module-card-meta" id="heko-streak-text">🔥 0 day streak</div>
+            <div class="badge badge-warning">Daily Habit</div>
+          </div>
+        </a>
+
+        <a href="revision.html" class="module-card" style="animation-delay:0.25s">
+          <div class="module-card-icon" style="background:rgba(139,92,246,0.15);">🔁</div>
+          <div class="module-card-title">Spaced Revision</div>
+          <div class="module-card-desc">Smart flashcard review with FSRS-lite spaced repetition</div>
+          <div class="flex items-center justify-between">
+            <div class="module-card-meta" id="revision-due-text">0 cards due</div>
+            <div class="badge" id="revision-urgency" style="background:rgba(139,92,246,0.15);color:#A78BFA;">Review</div>
+          </div>
+        </a>
+
+        <a href="library.html" class="module-card" style="animation-delay:0.3s">
+          <div class="module-card-icon" style="background:rgba(99,102,241,0.15);">📁</div>
+          <div class="module-card-title">Notes Library</div>
+          <div class="module-card-desc">Upload and manage your .txt notes — the AI's knowledge source</div>
+          <div class="flex items-center justify-between">
+            <div class="module-card-meta" id="library-files-text">0 files uploaded</div>
+            <div class="badge badge-primary">Upload</div>
+          </div>
+        </a>
+
+        <a href="planning.html" class="module-card" style="animation-delay:0.35s">
+          <div class="module-card-icon" style="background:rgba(236,72,153,0.15);">📅</div>
+          <div class="module-card-title">Study Planner</div>
+          <div class="module-card-desc">Weekly calendar, task tracking, and AI-powered study suggestions</div>
+          <div class="flex items-center justify-between">
+            <div class="module-card-meta" id="planner-tasks-text">0 tasks planned</div>
+            <div class="badge" style="background:rgba(236,72,153,0.15);color:#F472B6;">Plan</div>
+          </div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Bottom Nav (Mobile) -->
+<nav class="bottom-nav" id="bottom-nav"></nav>
+
+<!-- Scripts -->
+<script src="js/core.js"></script>
+<script src="js/revision-engine.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  // Set greeting
+  const now = new Date();
+  const hour = now.getHours();
+  const timeEl = document.getElementById('time-of-day');
+  if (timeEl) {
+    if (hour < 12) timeEl.textContent = 'Morning';
+    else if (hour < 17) timeEl.textContent = 'Afternoon';
+    else timeEl.textContent = 'Evening';
+  }
+
+  // Date display
+  const dateEl = document.getElementById('greeting-date');
+  if (dateEl) {
+    dateEl.textContent = now.toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    });
+  }
+
+  // Streak
+  const streak = StreakManager.get();
+  const streakEl = document.getElementById('streak-count');
+  if (streakEl) streakEl.textContent = streak.count || 0;
+
+  const hekoStreakEl = document.getElementById('heko-streak-text');
+  if (hekoStreakEl) hekoStreakEl.textContent = `🔥 ${streak.count || 0} day streak`;
+
+  // API status
+  const hasKey = !!AIClient.getApiKey();
+  const statusEl = document.getElementById('api-status-hero');
+  const statusTextEl = document.getElementById('api-status-text');
+  if (statusEl) {
+    statusEl.className = `api-status ${hasKey ? 'connected' : 'disconnected'}`;
+  }
+  if (statusTextEl) {
+    statusTextEl.textContent = hasKey ? 'AI Connected' : 'Set API Key';
+  }
+
+  // Study stats
+  const stats = StudyStats.get();
+  document.getElementById('stat-answered').textContent = stats.totalAnswered || 0;
+  document.getElementById('stat-accuracy').textContent = `${StudyStats.accuracy()}%`;
+  document.getElementById('stat-notes').textContent = stats.notesGenerated || 0;
+
+  // Notes count
+  const notesLib = Storage.get(KEYS.NOTES_LIB, []);
+  const notesCountEl = document.getElementById('notes-count-text');
+  if (notesCountEl) notesCountEl.textContent = `${notesLib.length} notes saved`;
+
+  // Revision due
+  try {
+    const dueCards = RevisionEngine.getDueCards();
+    const dueEl = document.getElementById('stat-due');
+    const dueTextEl = document.getElementById('revision-due-text');
+    const urgencyEl = document.getElementById('revision-urgency');
+    if (dueEl) dueEl.textContent = dueCards.length;
+    if (dueTextEl) dueTextEl.textContent = `${dueCards.length} cards due`;
+    if (urgencyEl && dueCards.length > 0) {
+      urgencyEl.textContent = `${dueCards.length} Due`;
+      urgencyEl.style.background = 'rgba(239,68,68,0.15)';
+      urgencyEl.style.color = 'var(--error)';
+    }
+  } catch (e) { console.warn(e); }
+
+  // Library files count
+  try {
+    const files = await DB.getAllFiles();
+    const filesEl = document.getElementById('stat-files');
+    const libEl = document.getElementById('library-files-text');
+    if (filesEl) filesEl.textContent = files.length;
+    if (libEl) libEl.textContent = `${files.length} file${files.length !== 1 ? 's' : ''} uploaded`;
+  } catch (e) { console.warn(e); }
+
+  // Planner tasks
+  const tasks = Storage.get(KEYS.PLANNER, []);
+  const plannerEl = document.getElementById('planner-tasks-text');
+  if (plannerEl) plannerEl.textContent = `${tasks.length} task${tasks.length !== 1 ? 's' : ''} planned`;
+
+  // HEKO Preview — load topic from engine
+  const todayTopic = typeof HekoEngine !== 'undefined'
+    ? HekoEngine.getTodaysTopic()
+    : 'Cardiac Action Potential';
+
+  const topicEl = document.getElementById('heko-topic-name');
+  if (topicEl) topicEl.textContent = todayTopic;
+
+  // Check if HEKO already done today
+  const hekoHistory = Storage.get(KEYS.HEKO_HISTORY, []);
+  const today = DateUtils.today();
+  const doneToday = hekoHistory.some(h => h.date === today);
+  const hekoStatusEl = document.getElementById('heko-status-text');
+  const hekoStartBtn = document.getElementById('heko-start-btn');
+  if (doneToday && hekoStatusEl && hekoStartBtn) {
+    hekoStatusEl.textContent = '✅ Completed today! Keep the streak going!';
+    hekoStartBtn.textContent = 'View Summary';
+    hekoStartBtn.className = 'btn btn-secondary btn-sm';
+  }
+
+  // HEKO last 7 days dots
+  const dotsEl = document.getElementById('heko-day-dots');
+  if (dotsEl) {
+    const last7 = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const ds = d.toISOString().split('T')[0];
+      const done = hekoHistory.some(h => h.date === ds);
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+      last7.push({ ds, done, dayName });
+    }
+    dotsEl.innerHTML = last7.map(day => `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="width:12px;height:12px;border-radius:50%;background:${day.done ? 'var(--success)' : 'var(--bg-elevated)'};border:2px solid ${day.done ? 'var(--success)' : 'var(--border-subtle)'};"
+             title="${day.ds}: ${day.done ? 'Completed' : 'Missed'}"></div>
+        <span style="font-size:10px;color:var(--text-muted);">${day.dayName.charAt(0)}</span>
+      </div>
+    `).join('');
+  }
+
+  // Exam countdown
+  const examDate = Storage.get(KEYS.EXAM_DATE, null);
+  if (examDate) {
+    const daysLeft = DateUtils.daysUntil(examDate);
+    const countdownEl = document.getElementById('exam-countdown');
+    const countdownText = document.getElementById('countdown-text');
+    if (daysLeft !== null && daysLeft >= 0 && countdownEl && countdownText) {
+      countdownEl.style.display = 'inline-flex';
+      countdownText.textContent = daysLeft;
+    }
+  }
+
+  // Last used timestamps (stub — set by each page on load)
+  ['study', 'exam'].forEach(key => {
+    const ts = Storage.get(`medhub_last_${key}`, null);
+    const el = document.getElementById(`${key}-last-used`);
+    if (el && ts) {
+      const d = new Date(ts);
+      el.textContent = `Last used: ${d.toLocaleDateString()}`;
+    }
+  });
+});
+</script>
+</body>
+</html>

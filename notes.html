@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedStudy Hub — AI Notes</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <div class="sidebar" id="sidebar"></div>
+
+  <main class="main-content" id="main-content">
+    <div class="content-wrapper">
+
+      <div class="page-header">
+        <div class="page-title">🤖 AI Notes Generator</div>
+        <div class="page-subtitle">Generate structured study notes from your uploaded content</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start;" id="notes-layout">
+
+        <!-- Left: Generator + Output -->
+        <div>
+          <!-- Input Card -->
+          <div class="card mb-4">
+            <div class="form-group">
+              <label class="form-label">Topic</label>
+              <input type="text" class="form-input" id="topic-input"
+                     placeholder="e.g., Renin-Angiotensin-Aldosterone System"
+                     list="topic-suggestions" autocomplete="off">
+              <datalist id="topic-suggestions"></datalist>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Scope</label>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                <label style="cursor:pointer;">
+                  <input type="radio" name="scope" value="quick" style="display:none;" id="scope-quick">
+                  <div class="scope-btn" data-scope="quick" style="text-align:center;padding:12px;border:2px solid var(--border-subtle);border-radius:var(--border-radius-sm);transition:all var(--transition);">
+                    <div style="font-size:20px;margin-bottom:4px;">⚡</div>
+                    <div style="font-weight:700;font-size:var(--text-sm);">Quick</div>
+                    <div style="font-size:var(--text-xs);color:var(--text-muted);">Key bullets only</div>
+                  </div>
+                </label>
+                <label style="cursor:pointer;">
+                  <input type="radio" name="scope" value="standard" checked style="display:none;" id="scope-standard">
+                  <div class="scope-btn active-scope" data-scope="standard" style="text-align:center;padding:12px;border:2px solid var(--accent-primary);background:rgba(14,165,233,0.1);border-radius:var(--border-radius-sm);">
+                    <div style="font-size:20px;margin-bottom:4px;">📝</div>
+                    <div style="font-weight:700;font-size:var(--text-sm);">Standard</div>
+                    <div style="font-size:var(--text-xs);color:var(--text-muted);">Comprehensive</div>
+                  </div>
+                </label>
+                <label style="cursor:pointer;">
+                  <input type="radio" name="scope" value="deep" style="display:none;" id="scope-deep">
+                  <div class="scope-btn" data-scope="deep" style="text-align:center;padding:12px;border:2px solid var(--border-subtle);border-radius:var(--border-radius-sm);transition:all var(--transition);">
+                    <div style="font-size:20px;margin-bottom:4px;">🔬</div>
+                    <div style="font-weight:700;font-size:var(--text-sm);">Deep Dive</div>
+                    <div style="font-size:var(--text-xs);color:var(--text-muted);">Maximum detail</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <button class="btn btn-primary btn-full" id="generate-notes-btn" style="font-size:var(--text-base);">
+              🚀 Generate Notes
+            </button>
+
+            <div id="no-notes-warning" style="display:none;margin-top:12px;padding:12px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:var(--border-radius-sm);">
+              <span style="font-size:var(--text-sm);color:var(--warning);">
+                ⚠️ No notes uploaded yet.
+                <a href="library.html" style="color:var(--warning);text-decoration:underline;">Upload .txt files</a>
+                to ground AI responses in your content.
+              </span>
+            </div>
+          </div>
+
+          <!-- Generated Output -->
+          <div class="card" id="output-card" style="display:none;">
+            <div class="card-header">
+              <div>
+                <div class="card-title" id="output-title">Generated Notes</div>
+                <div class="card-subtitle" id="output-meta"></div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-secondary btn-sm" id="export-btn">💾 Export .txt</button>
+                <button class="btn btn-success btn-sm" id="gen-mcqs-btn">📝 Make MCQs</button>
+              </div>
+            </div>
+            <div class="notes-content" id="notes-output"></div>
+
+            <div id="mcq-gen-loading" style="display:none;margin-top:16px;text-align:center;">
+              <div class="spinner" style="margin:0 auto 8px;"></div>
+              <p style="color:var(--text-muted);font-size:var(--text-sm);">Generating MCQs from this topic...</p>
+            </div>
+          </div>
+
+          <!-- Loading State -->
+          <div id="notes-loading" style="display:none;">
+            <div class="card" style="position:relative;min-height:300px;">
+              <div class="loading-overlay" style="position:absolute;">
+                <div class="spinner spinner-lg"></div>
+                <p>AI is generating notes from your uploaded content...</p>
+                <p style="font-size:var(--text-xs);color:var(--text-muted);">This may take 15–30 seconds</p>
+              </div>
+              <div class="shimmer" style="height:24px;width:60%;margin-bottom:12px;"></div>
+              <div class="shimmer" style="height:16px;width:100%;margin-bottom:8px;"></div>
+              <div class="shimmer" style="height:16px;width:90%;margin-bottom:8px;"></div>
+              <div class="shimmer" style="height:16px;width:80%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Saved Notes Library -->
+        <div id="saved-notes-panel">
+          <div class="card" style="position:sticky;top:20px;">
+            <div class="card-header" style="margin-bottom:12px;">
+              <div class="card-title">📚 Saved Notes</div>
+              <span class="badge badge-primary" id="notes-count-badge">0</span>
+            </div>
+            <div id="saved-notes-list" style="max-height:600px;overflow-y:auto;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav" id="bottom-nav"></nav>
+
+<script src="js/core.js"></script>
+<script src="js/notes-engine.js"></script>
+<script>
+let currentNote = null;
+let selectedScope = 'standard';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  populateSuggestions();
+  renderSavedNotes();
+  checkNotesUploaded();
+
+  // Scope selector
+  document.querySelectorAll('.scope-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedScope = btn.dataset.scope;
+      document.querySelectorAll('.scope-btn').forEach(b => {
+        b.style.border = '2px solid var(--border-subtle)';
+        b.style.background = 'transparent';
+        b.classList.remove('active-scope');
+      });
+      btn.style.border = '2px solid var(--accent-primary)';
+      btn.style.background = 'rgba(14,165,233,0.1)';
+    });
+  });
+
+  document.getElementById('generate-notes-btn').addEventListener('click', generateNotes);
+  document.getElementById('export-btn').addEventListener('click', exportNote);
+  document.getElementById('gen-mcqs-btn').addEventListener('click', generateMCQs);
+
+  // Mobile: stack layout
+  if (window.innerWidth < 768) {
+    document.getElementById('notes-layout').style.gridTemplateColumns = '1fr';
+    document.getElementById('saved-notes-panel').style.order = '-1';
+  }
+});
+
+async function checkNotesUploaded() {
+  try {
+    const files = await DB.getAllFiles();
+    if (files.length === 0) {
+      document.getElementById('no-notes-warning').style.display = 'block';
+    }
+  } catch {}
+}
+
+function populateSuggestions() {
+  const suggestions = NotesEngine.getTopicSuggestions();
+  const datalist = document.getElementById('topic-suggestions');
+  datalist.innerHTML = suggestions.map(s => `<option value="${s}">`).join('');
+}
+
+async function generateNotes() {
+  const topic = document.getElementById('topic-input').value.trim();
+  if (!topic) {
+    Toast.show('Please enter a topic', 'error');
+    document.getElementById('topic-input').focus();
+    return;
+  }
+
+  const generateBtn = document.getElementById('generate-notes-btn');
+  generateBtn.disabled = true;
+  generateBtn.textContent = '⏳ Generating...';
+
+  document.getElementById('output-card').style.display = 'none';
+  document.getElementById('notes-loading').style.display = 'block';
+
+  const result = await NotesEngine.generateNotes(topic, selectedScope);
+
+  document.getElementById('notes-loading').style.display = 'none';
+  generateBtn.disabled = false;
+  generateBtn.textContent = '🚀 Generate Notes';
+
+  if (!result) return;
+
+  // Save the note
+  currentNote = NotesEngine.saveNote(topic, result, selectedScope);
+
+  // Display
+  document.getElementById('output-card').style.display = 'block';
+  document.getElementById('output-title').textContent = `📄 ${topic}`;
+  document.getElementById('output-meta').textContent =
+    `${selectedScope.charAt(0).toUpperCase() + selectedScope.slice(1)} · ${new Date().toLocaleString()}`;
+  document.getElementById('notes-output').innerHTML = renderMarkdown(result);
+
+  // Update saved list
+  renderSavedNotes();
+  Toast.show(`Notes for "${topic}" generated and saved`, 'success');
+}
+
+function exportNote() {
+  if (!currentNote) return;
+  NotesEngine.exportNote(currentNote);
+}
+
+async function generateMCQs() {
+  if (!currentNote) return;
+
+  const btn = document.getElementById('gen-mcqs-btn');
+  const loadingEl = document.getElementById('mcq-gen-loading');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating...';
+  loadingEl.style.display = 'block';
+
+  const qs = await NotesEngine.generateMCQsFromNote(currentNote);
+
+  btn.disabled = false;
+  btn.textContent = '📝 Make MCQs';
+  loadingEl.style.display = 'none';
+
+  if (qs.length > 0) {
+    Toast.show(`${qs.length} MCQs saved to Study Mode`, 'success');
+  }
+}
+
+function renderSavedNotes() {
+  const notes = NotesEngine.getAllNotes();
+  const badge = document.getElementById('notes-count-badge');
+  const list = document.getElementById('saved-notes-list');
+
+  if (badge) badge.textContent = notes.length;
+
+  if (notes.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state" style="padding:30px 10px;">
+        <div style="font-size:32px;margin-bottom:8px;">📄</div>
+        <div style="font-size:var(--text-sm);color:var(--text-muted);">No notes generated yet.</div>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = notes.map(note => `
+    <div class="file-item" style="margin-bottom:8px;flex-direction:column;align-items:flex-start;cursor:pointer;"
+         data-note-id="${note.id}" onclick="loadSavedNote('${note.id}')">
+      <div style="display:flex;width:100%;justify-content:space-between;align-items:flex-start;">
+        <div class="file-name">${note.topic}</div>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();exportSavedNote('${note.id}')" title="Export">💾</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteSavedNote('${note.id}')" title="Delete">🗑</button>
+        </div>
+      </div>
+      <div class="file-meta">${new Date(note.updatedAt || note.createdAt).toLocaleDateString()} · ${note.scope || 'standard'}</div>
+      <span class="badge badge-primary" style="margin-top:4px;">${note.topic.substring(0, 20)}</span>
+    </div>
+  `).join('');
+}
+
+function loadSavedNote(id) {
+  const notes = NotesEngine.getAllNotes();
+  const note = notes.find(n => n.id === id);
+  if (!note) return;
+
+  currentNote = note;
+  document.getElementById('topic-input').value = note.topic;
+
+  document.getElementById('output-card').style.display = 'block';
+  document.getElementById('output-title').textContent = `📄 ${note.topic}`;
+  document.getElementById('output-meta').textContent =
+    `${note.scope || 'standard'} · ${new Date(note.createdAt).toLocaleString()}`;
+  document.getElementById('notes-output').innerHTML = renderMarkdown(note.content);
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function exportSavedNote(id) {
+  const notes = NotesEngine.getAllNotes();
+  const note = notes.find(n => n.id === id);
+  if (note) NotesEngine.exportNote(note);
+}
+
+function deleteSavedNote(id) {
+  if (!confirm('Delete this note?')) return;
+  NotesEngine.deleteNote(id);
+  if (currentNote && currentNote.id === id) {
+    currentNote = null;
+    document.getElementById('output-card').style.display = 'none';
+  }
+  renderSavedNotes();
+}
+</script>
+</body>
+</html>

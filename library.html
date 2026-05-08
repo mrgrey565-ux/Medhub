@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedStudy Hub — Notes Library</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .dropzone.drag-over {
+      border-color: var(--accent-primary) !important;
+      background: rgba(14, 165, 233, 0.08) !important;
+      transform: scale(1.01);
+    }
+    .search-highlight { background: rgba(245,158,11,0.3); border-radius: 2px; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="sidebar" id="sidebar"></div>
+
+  <main class="main-content" id="main-content">
+    <div class="content-wrapper">
+
+      <div class="page-header">
+        <div class="page-title">📁 Notes Library</div>
+        <div class="page-subtitle">Upload your .txt notes — the foundation for all AI features</div>
+      </div>
+
+      <!-- Storage Stats -->
+      <div class="stats-row" style="margin-bottom:24px;">
+        <div class="stat-card">
+          <div class="stat-value" id="lib-file-count" style="font-size:var(--text-3xl);">0</div>
+          <div class="stat-label">Files Uploaded</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="lib-total-chars" style="font-size:var(--text-3xl);">0</div>
+          <div class="stat-label">Total Characters</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="lib-storage-mb" style="font-size:var(--text-3xl);">0</div>
+          <div class="stat-label">Est. Storage (MB)</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;" id="lib-layout">
+
+        <!-- Left: Upload -->
+        <div>
+          <!-- Dropzone -->
+          <div class="dropzone mb-4" id="dropzone">
+            <div class="dropzone-icon">📄</div>
+            <div class="dropzone-title">Drop .txt files here</div>
+            <div class="dropzone-subtitle">or click to browse</div>
+            <input type="file" id="file-input" accept=".txt,text/plain" multiple
+                   style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+          </div>
+
+          <div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="document.getElementById('file-input').click();">
+              📂 Browse Files
+            </button>
+            <button class="btn btn-danger" id="clear-all-btn">🗑 Clear All Notes</button>
+          </div>
+
+          <!-- Upload Progress -->
+          <div id="upload-progress" style="display:none;margin-bottom:16px;" class="card">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="spinner"></div>
+              <span style="font-size:var(--text-sm);color:var(--text-muted);">Uploading and processing...</span>
+            </div>
+          </div>
+
+          <!-- Info Box -->
+          <div class="card" style="background:rgba(14,165,233,0.05);border-color:rgba(14,165,233,0.2);">
+            <div class="card-title" style="margin-bottom:12px;font-size:var(--text-base);">ℹ️ How It Works</div>
+            <ul style="font-size:var(--text-sm);color:var(--text-secondary);line-height:2;">
+              <li>📤 Upload your extracted textbook notes as <b>.txt</b> files</li>
+              <li>🏷️ Topics are auto-detected from medical keywords</li>
+              <li>🤖 All AI features use your notes as their <b>exclusive source</b></li>
+              <li>💾 Files are stored locally in IndexedDB (never sent to servers)</li>
+              <li>📝 Supports multiple files — all content is searched together</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Right: Files + Search -->
+        <div>
+          <!-- Search -->
+          <div class="form-group mb-4">
+            <label class="form-label">Search Within Notes</label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" class="form-input" id="search-input"
+                     placeholder="Search for a term across all notes...">
+              <button class="btn btn-secondary" id="search-btn">🔍</button>
+            </div>
+          </div>
+
+          <!-- Search Results -->
+          <div id="search-results" style="display:none;" class="card mb-4">
+            <div class="card-header">
+              <div class="card-title" style="font-size:var(--text-base);">Search Results</div>
+              <button class="btn btn-ghost btn-sm" onclick="clearSearch()">✕ Clear</button>
+            </div>
+            <div id="search-results-list" style="max-height:300px;overflow-y:auto;"></div>
+          </div>
+
+          <!-- Files List -->
+          <div class="card-title" style="margin-bottom:12px;">📚 Uploaded Files</div>
+          <div id="files-list">
+            <div class="empty-state" id="files-empty-state" style="padding:40px 20px;">
+              <div class="empty-state-icon">📁</div>
+              <div class="empty-state-title">No files uploaded</div>
+              <div class="empty-state-desc">Upload your .txt notes to get started</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- File Preview Modal -->
+      <div class="modal-overlay hidden" id="file-preview-modal">
+        <div class="modal-box" style="max-width:700px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;">
+          <button class="modal-close" id="close-preview">✕</button>
+          <div class="modal-title" id="preview-filename">File Preview</div>
+          <div class="modal-subtitle" id="preview-meta"></div>
+          <div style="flex:1;overflow-y:auto;background:var(--bg-elevated);border-radius:var(--border-radius-sm);padding:16px;font-family:monospace;font-size:var(--text-sm);line-height:1.7;color:var(--text-secondary);white-space:pre-wrap;word-break:break-word;margin-top:16px;"
+               id="preview-content"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav" id="bottom-nav"></nav>
+
+<script src="js/core.js"></script>
+<script src="js/library-engine.js"></script>
+<script>
+let allFiles = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await refreshFileList();
+  setupDropzone();
+  setupFileInput();
+
+  document.getElementById('clear-all-btn').addEventListener('click', clearAllFiles);
+  document.getElementById('search-btn').addEventListener('click', performSearch);
+  document.getElementById('search-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') performSearch();
+  });
+  document.getElementById('close-preview').addEventListener('click', () => {
+    document.getElementById('file-preview-modal').classList.add('hidden');
+  });
+
+  // Mobile
+  if (window.innerWidth < 768) {
+    document.getElementById('lib-layout').style.gridTemplateColumns = '1fr';
+  }
+});
+
+function setupDropzone() {
+  const dz = document.getElementById('dropzone');
+
+  dz.addEventListener('dragover', e => {
+    e.preventDefault();
+    dz.classList.add('drag-over');
+  });
+
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+
+  dz.addEventListener('drop', async e => {
+    e.preventDefault();
+    dz.classList.remove('drag-over');
+    const files = Array.from(e.dataTransfer.files);
+    await uploadFiles(files);
+  });
+
+  dz.addEventListener('click', () => {
+    document.getElementById('file-input').click();
+  });
+}
+
+function setupFileInput() {
+  const input = document.getElementById('file-input');
+  input.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    await uploadFiles(files);
+    input.value = '';
+  });
+}
+
+async function uploadFiles(files) {
+  if (files.length === 0) return;
+
+  const progress = document.getElementById('upload-progress');
+  progress.style.display = 'block';
+
+  let uploaded = 0;
+  for (const file of files) {
+    const result = await LibraryEngine.uploadFile(file);
+    if (result) uploaded++;
+  }
+
+  progress.style.display = 'none';
+
+  if (uploaded > 0) {
+    await refreshFileList();
+  }
+}
+
+async function refreshFileList() {
+  allFiles = await LibraryEngine.getAllFiles();
+
+  // Update stats
+  const stats = await LibraryEngine.getStorageStats();
+  document.getElementById('lib-file-count').textContent = stats.fileCount;
+  document.getElementById('lib-total-chars').textContent = stats.totalChars.toLocaleString();
+  document.getElementById('lib-storage-mb').textContent = stats.estimatedMB;
+
+  renderFileList(allFiles);
+}
+
+function renderFileList(files) {
+  const container = document.getElementById('files-list');
+  const emptyState = document.getElementById('files-empty-state');
+
+  if (files.length === 0) {
+    emptyState.style.display = 'block';
+    container.innerHTML = '';
+    container.appendChild(emptyState);
+    return;
+  }
+
+  container.innerHTML = files.map(file => `
+    <div class="file-item mb-2" id="file-item-${file.id}">
+      <div class="file-icon">📄</div>
+      <div class="file-info">
+        <div class="file-name">${file.filename}</div>
+        <div class="file-meta">
+          ${LibraryEngine.formatSize(file.charCount)} ·
+          ${LibraryEngine.formatDate(file.uploadDate)}
+        </div>
+        <div class="file-tags">
+          ${(file.topics || []).map(t => `<span class="file-tag">${t}</span>`).join('')}
+          ${(file.topics || []).length === 0 ? '<span class="file-tag" style="background:var(--bg-elevated);color:var(--text-muted);">untagged</span>' : ''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <button class="btn btn-secondary btn-sm" onclick="previewFile(${file.id})">👁 View</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteFile(${file.id})">🗑 Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function previewFile(id) {
+  const file = allFiles.find(f => f.id === id);
+  if (!file) return;
+
+  document.getElementById('preview-filename').textContent = `📄 ${file.filename}`;
+  document.getElementById('preview-meta').textContent =
+    `${LibraryEngine.formatSize(file.charCount)} · ${LibraryEngine.formatDate(file.uploadDate)}`;
+  document.getElementById('preview-content').textContent =
+    file.content.substring(0, 5000) + (file.content.length > 5000 ? '\n\n[... truncated for preview ...]' : '');
+
+  document.getElementById('file-preview-modal').classList.remove('hidden');
+}
+
+async function deleteFile(id) {
+  if (!confirm('Delete this file? This will remove it from all AI context.')) return;
+  const success = await LibraryEngine.deleteFile(id);
+  if (success) await refreshFileList();
+}
+
+async function clearAllFiles() {
+  if (!confirm('Delete ALL uploaded notes? This cannot be undone. All AI features will lose their context.')) return;
+  const success = await LibraryEngine.clearAll();
+  if (success) await refreshFileList();
+}
+
+async function performSearch() {
+  const keyword = document.getElementById('search-input').value.trim();
+  if (!keyword) return;
+
+  const results = await LibraryEngine.search(keyword);
+  const container = document.getElementById('search-results');
+  const list = document.getElementById('search-results-list');
+
+  container.style.display = 'block';
+
+  if (results.length === 0) {
+    list.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text-muted);">No results found for "${keyword}"</div>`;
+    return;
+  }
+
+  list.innerHTML = results.map(r => {
+    const highlighted = r.snippet.replace(
+      new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'),
+      match => `<span class="search-highlight">${match}</span>`
+    );
+    return `
+      <div style="padding:12px;border-bottom:1px solid var(--border-subtle);">
+        <div style="font-weight:600;font-size:var(--text-sm);color:var(--accent-primary);margin-bottom:4px;">
+          📄 ${r.filename}
+        </div>
+        <div style="font-size:var(--text-xs);color:var(--text-secondary);line-height:1.6;">${highlighted}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-results').style.display = 'none';
+}
+</script>
+</body>
+</html>
