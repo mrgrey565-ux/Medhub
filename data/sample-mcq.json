@@ -1,0 +1,382 @@
+[
+  {
+    "id": "mcq-001",
+    "question": "Which enzyme is responsible for converting angiotensin I to angiotensin II?",
+    "options": {
+      "A": "Renin",
+      "B": "Angiotensin-converting enzyme (ACE)",
+      "C": "Aldosterone synthase",
+      "D": "Neprilysin"
+    },
+    "correct": "B",
+    "explanation": "Angiotensin-converting enzyme (ACE) cleaves two amino acids from the C-terminal end of angiotensin I (10 amino acids) to produce angiotensin II (8 amino acids). ACE is primarily found in pulmonary endothelial cells. Renin converts angiotensinogen to angiotensin I.",
+    "topic": "Cardiovascular",
+    "subject": "Physiology",
+    "source": "json",
+    "difficulty": "medium",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-002",
+    "question": "The SA node normally has an intrinsic firing rate of approximately:",
+    "options": {
+      "A": "20–40 beats per minute",
+      "B": "40–60 beats per minute",
+      "C": "60–100 beats per minute",
+      "D": "100–120 beats per minute"
+    },
+    "correct": "C",
+    "explanation": "The sinoatrial (SA) node has an intrinsic pacemaker rate of 60–100 beats per minute, which is the fastest of all cardiac pacemaker cells, making it the dominant pacemaker. The AV node fires at 40–60 bpm and the Purkinje fibers/ventricular myocytes at 20–40 bpm.",
+    "topic": "Cardiovascular",
+    "subject": "Physiology",
+    "source": "json",
+    "difficulty": "easy",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-003",
+    "question": "Which cell type is the predominant phagocyte in the early stages (first 24–48 hours) of acute inflammation?",
+    "options": {
+      "A": "Macrophages",
+      "B": "Lymphocytes",
+      "C": "Neutrophils",
+      "D": "Plasma cells"
+    },
+    "correct": "C",
+    "explanation": "Neutrophils (polymorphonuclear leukocytes) are the first inflammatory cells to arrive at the site of acute inflammation, typically within hours. They are the predominant cell type in the first 24–48 hours. Macrophages appear later and dominate chronic inflammation.",
+    "topic": "Pathology",
+    "subject": "Pathology",
+    "source": "json",
+    "difficulty": "easy",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-004",
+    "question": "Which of the following is the classic presentation of Brown-Séquard syndrome?",
+    "options": {
+      "A": "Bilateral loss of all sensations below the lesion",
+      "B": "Ipsilateral motor loss and contralateral pain/temperature loss below the lesion",
+      "C": "Bilateral motor loss with preserved sensation",
+      "D": "Contralateral motor loss and ipsilateral pain/temperature loss"
+    },
+    "correct": "B",
+    "explanation": "Brown-Séquard syndrome results from hemisection of the spinal cord. Ipsilateral findings: UMN signs (spastic paresis), loss of proprioception/vibration (dorsal columns cross at medulla). Contralateral findings: loss of pain and temperature (spinothalamic tract crosses within 1–2 levels of entry).",
+    "topic": "Neurology",
+    "subject": "Anatomy",
+    "source": "json",
+    "difficulty": "medium",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-005",
+    "question": "Warfarin inhibits which vitamin K-dependent clotting factors?",
+    "options": {
+      "A": "Factors I, V, VIII, X",
+      "B": "Factors II, VII, IX, X and Proteins C & S",
+      "C": "Factors VII, VIII, IX, XI",
+      "D": "Factors II, V, VII, X"
+    },
+    "correct": "B",
+    "explanation": "Warfarin inhibits vitamin K epoxide reductase, preventing regeneration of reduced vitamin K. This impairs gamma-carboxylation of glutamate residues on Factors II (prothrombin), VII, IX, X, and the anticoagulant Proteins C and S. Remember: '1972' — Factors II, VII, IX, X.",
+    "topic": "Pharmacology",
+    "subject": "Pharmacology",
+    "source": "json",
+    "difficulty": "medium",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-006",
+    "question": "The blood-brain barrier is primarily formed by tight junctions between which cells?",
+    "options": {
+      "A": "Astrocytes",
+      "B": "Microglia",
+      "C": "Brain capillary endothelial cells",
+      "D": "Oligodendrocytes"
+    },
+    "correct": "C",
+    "explanation": "The blood-brain barrier (BBB) is primarily composed of tight junctions (zonula occludens) between brain capillary endothelial cells. Astrocytic end-feet surround capillaries and induce/maintain BBB properties but do not form the primary barrier. Pericytes also contribute to BBB maintenance.",
+    "topic": "Neuroscience",
+    "subject": "Physiology",
+    "source": "json",
+    "difficulty": "medium",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-007",
+    "question": "Which of the following best describes the mechanism of action of beta-lactam antibiotics?",
+    "options": {
+      "A": "Inhibit DNA gyrase",
+      "B": "Inhibit transpeptidase (PBPs), blocking cell wall cross-linking",
+      "C": "Disrupt cell membrane integrity",
+      "D": "Inhibit 30S ribosomal subunit"
+    },
+    "correct": "B",
+    "explanation": "Beta-lactam antibiotics (penicillins, cephalosporins, carbapenems) bind covalently to penicillin-binding proteins (PBPs), which are transpeptidase enzymes. This prevents cross-linking of peptidoglycan chains in the bacterial cell wall, ultimately leading to cell lysis. They are bactericidal.",
+    "topic": "Microbiology",
+    "subject": "Pharmacology",
+    "source": "json",
+    "difficulty": "easy",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-008",
+    "question": "During embryological development, the neural tube defect spina bifida occulta results from failure of fusion of:",
+    "options": {
+      "A": "The anterior neuropore",
+      "B": "The posterior neuropore",
+      "C": "The vertebral arch (laminae) without herniation of neural contents",
+      "D": "The notochord"
+    },
+    "correct": "C",
+    "explanation": "Spina bifida occulta is the mildest form where vertebral arches (laminae) fail to fuse, but the spinal cord and meninges remain within the vertebral canal without herniation. It is often covered by skin and may be marked by a tuft of hair or dimple. No neurological deficits in most cases.",
+    "topic": "Embryology",
+    "subject": "Anatomy",
+    "source": "json",
+    "difficulty": "medium",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-009",
+    "question": "Which enzyme catalyzes the rate-limiting step of glycolysis?",
+    "options": {
+      "A": "Hexokinase",
+      "B": "Glucose-6-phosphate isomerase",
+      "C": "Phosphofructokinase-1 (PFK-1)",
+      "D": "Pyruvate kinase"
+    },
+    "correct": "C",
+    "explanation": "Phosphofructokinase-1 (PFK-1) catalyzes the rate-limiting (committed) step of glycolysis: fructose-6-phosphate → fructose-1,6-bisphosphate. It is allosterically inhibited by ATP and citrate, and activated by AMP and fructose-2,6-bisphosphate. This is the main regulatory point of glycolysis.",
+    "topic": "Biochemistry",
+    "subject": "Biochemistry",
+    "source": "json",
+    "difficulty": "easy",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-010",
+    "question": "A patient presents with elevated TSH and low free T4. This pattern is most consistent with:",
+    "options": {
+      "A": "Primary hyperthyroidism",
+      "B": "Secondary hypothyroidism",
+      "C": "Primary hypothyroidism",
+      "D": "Subclinical hyperthyroidism"
+    },
+    "correct": "C",
+    "explanation": "Elevated TSH with low free T4 indicates the pituitary is working hard to stimulate an underperforming thyroid — this is primary hypothyroidism. The thyroid gland itself is failing. Secondary hypothyroidism (pituitary failure) would show low TSH and low T4. Subclinical hypothyroidism shows elevated TSH with normal T4.",
+    "topic": "Endocrinology",
+    "subject": "Physiology",
+    "source": "json",
+    "difficulty": "easy",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-011",
+    "question": "The hepatic portal vein is formed by the union of:",
+    "options": {
+      "A": "Superior mesenteric vein and inferior vena cava",
+      "B": "Superior mesenteric vein and splenic vein",
+      "C": "Inferior mesenteric vein and splenic vein",
+      "D": "Superior and inferior mesenteric veins"
+    },
+    "correct": "B",
+    "explanation": "The portal vein is formed behind the neck of the pancreas by the union of the superior mesenteric vein (SMV) and the splenic vein. The inferior mesenteric vein (IMV) typically drains into the splenic vein (sometimes into SMV) before this junction. The portal vein carries nutrient-rich blood to the liver.",
+    "topic": "Anatomy",
+    "subject": "Anatomy",
+    "source": "json",
+    "difficulty": "medium",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-012",
+    "question": "Myasthenia gravis is caused by autoantibodies directed against:",
+    "options": {
+      "A": "Voltage-gated calcium channels",
+      "B": "Nicotinic acetylcholine receptors at the neuromuscular junction",
+      "C": "Muscarinic acetylcholine receptors",
+      "D": "Voltage-gated potassium channels"
+    },
+    "correct": "B",
+    "explanation": "Myasthenia gravis (MG) is an autoimmune disease where IgG antibodies target nicotinic acetylcholine receptors (nAChR) at the neuromuscular junction. This leads to receptor destruction and complement-mediated damage. Lambert-Eaton syndrome, by contrast, targets presynaptic voltage-gated calcium channels.",
+    "topic": "Neurology",
+    "subject": "Pathology",
+    "source": "json",
+    "difficulty": "medium",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-013",
+    "question": "Which of the following correctly describes the Frank-Starling mechanism?",
+    "options": {
+      "A": "Increased afterload increases stroke volume",
+      "B": "Increased preload (ventricular end-diastolic volume) increases stroke volume",
+      "C": "Sympathetic stimulation decreases heart rate",
+      "D": "Increased contractility decreases cardiac output"
+    },
+    "correct": "B",
+    "explanation": "The Frank-Starling mechanism states that the heart's stroke volume increases in response to increased end-diastolic volume (preload). Greater stretch of ventricular myocytes leads to more optimal actin-myosin overlap and increased force of contraction. This allows the heart to match output to venous return.",
+    "topic": "Cardiovascular",
+    "subject": "Physiology",
+    "source": "json",
+    "difficulty": "easy",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-014",
+    "question": "A 45-year-old with jaundice, dark urine, pale stools, and pruritus most likely has obstruction at which level?",
+    "options": {
+      "A": "Intrahepatic (hepatocyte level)",
+      "B": "Pre-hepatic (hemolytic)",
+      "C": "Post-hepatic (biliary obstruction)",
+      "D": "Sinusoidal"
+    },
+    "correct": "C",
+    "explanation": "The triad of dark urine (conjugated bilirubin in urine), pale/clay-colored stools (absence of urobilinogen/stercobilinogen), and pruritus (bile salts in skin) indicates obstructive (post-hepatic) jaundice. Causes include gallstones (choledocholithiasis), cholangiocarcinoma, or pancreatic head cancer.",
+    "topic": "Gastroenterology",
+    "subject": "Pathology",
+    "source": "json",
+    "difficulty": "medium",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-015",
+    "question": "The complement system's C3b component primarily functions as:",
+    "options": {
+      "A": "A chemotactic factor for neutrophils",
+      "B": "An opsonin facilitating phagocytosis",
+      "C": "A component of the membrane attack complex",
+      "D": "A mast cell degranulator"
+    },
+    "correct": "B",
+    "explanation": "C3b is the major opsonin of the complement system. It coats (opsonizes) bacteria and other pathogens, enhancing their recognition and phagocytosis by neutrophils and macrophages via complement receptor 1 (CR1). C5a is the chemotactic factor, C5b–C9 form the membrane attack complex (MAC).",
+    "topic": "Immunology",
+    "subject": "Microbiology",
+    "source": "json",
+    "difficulty": "medium",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-016",
+    "question": "Bitemporal hemianopia is most commonly caused by compression of which structure?",
+    "options": {
+      "A": "Left optic nerve",
+      "B": "Right optic tract",
+      "C": "Optic chiasm",
+      "D": "Optic radiation"
+    },
+    "correct": "C",
+    "explanation": "The optic chiasm contains crossing nasal fibers from both retinas (which carry temporal visual field information). Compression of the chiasm (most commonly by a pituitary adenoma or craniopharyngioma) destroys these crossing fibers, causing loss of both temporal visual fields — bitemporal hemianopia.",
+    "topic": "Neurology",
+    "subject": "Anatomy",
+    "source": "json",
+    "difficulty": "medium",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-017",
+    "question": "Which diuretic acts primarily by inhibiting the Na⁺-K⁺-2Cl⁻ (NKCC2) cotransporter?",
+    "options": {
+      "A": "Hydrochlorothiazide",
+      "B": "Spironolactone",
+      "C": "Acetazolamide",
+      "D": "Furosemide"
+    },
+    "correct": "D",
+    "explanation": "Furosemide (a loop diuretic) acts on the thick ascending limb of the Loop of Henle by blocking the NKCC2 (Na⁺-K⁺-2Cl⁻) cotransporter on the luminal surface. This is the most potent class of diuretics. Thiazides block NCC in DCT; spironolactone blocks aldosterone receptors; acetazolamide inhibits carbonic anhydrase.",
+    "topic": "Pharmacology",
+    "subject": "Pharmacology",
+    "source": "json",
+    "difficulty": "medium",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-018",
+    "question": "Which of the following is the most common histological type of lung cancer in non-smokers?",
+    "options": {
+      "A": "Squamous cell carcinoma",
+      "B": "Small cell carcinoma",
+      "C": "Adenocarcinoma",
+      "D": "Large cell carcinoma"
+    },
+    "correct": "C",
+    "explanation": "Adenocarcinoma is the most common lung cancer overall and the most common type in non-smokers and women. It typically arises peripherally from bronchiolar/alveolar cells and is associated with EGFR mutations. Squamous cell carcinoma and small cell carcinoma are strongly associated with smoking.",
+    "topic": "Oncology",
+    "subject": "Pathology",
+    "source": "json",
+    "difficulty": "medium",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-019",
+    "question": "The zona glomerulosa of the adrenal cortex secretes primarily:",
+    "options": {
+      "A": "Cortisol",
+      "B": "DHEA and androgens",
+      "C": "Aldosterone",
+      "D": "Epinephrine"
+    },
+    "correct": "C",
+    "explanation": "Mnemonic — GFR / Salt Sugar Sex: Zona Glomerulosa → Aldosterone (salt/mineralocorticoids); Zona Fasciculata → Cortisol (sugar/glucocorticoids); Zona Reticularis → Sex hormones (DHEA, androgens). The medulla secretes catecholamines (epinephrine/norepinephrine).",
+    "topic": "Endocrinology",
+    "subject": "Physiology",
+    "source": "json",
+    "difficulty": "easy",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  },
+  {
+    "id": "mcq-020",
+    "question": "Which type of hypersensitivity reaction is responsible for contact dermatitis (e.g., poison ivy)?",
+    "options": {
+      "A": "Type I — IgE-mediated (immediate)",
+      "B": "Type II — Antibody-mediated cytotoxicity",
+      "C": "Type III — Immune complex-mediated",
+      "D": "Type IV — T cell-mediated (delayed-type)"
+    },
+    "correct": "D",
+    "explanation": "Contact dermatitis is a classic Type IV (delayed-type) hypersensitivity reaction, mediated by sensitized T lymphocytes (CD4+ Th1 and CD8+ T cells), NOT antibodies. It takes 48–72 hours to develop after re-exposure. The antigen (hapten) binds skin proteins, is presented by Langerhans cells, and triggers a T cell response.",
+    "topic": "Immunology",
+    "subject": "Pathology",
+    "source": "json",
+    "difficulty": "easy",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "timesShown": 0,
+    "timesCorrect": 0
+  }
+]
