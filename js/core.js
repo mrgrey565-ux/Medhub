@@ -87,17 +87,19 @@ const AIClient = {
         }),
       });
 
-      // Log response info for debugging
       console.log('Response status:', response.status);
 
       if (!response.ok) {
         let errMsg = 'API Error ' + response.status;
+        
+        // FIX: Read text once to prevent "body stream already read" TypeError
+        const errText = await response.text();
         try {
-          const errBody = await response.json();
+          const errBody = JSON.parse(errText);
           console.log('Error body:', errBody);
           errMsg = errBody.error?.message || errBody.message || errBody.error || errBody.detail || JSON.stringify(errBody);
         } catch {
-          errMsg = await response.text();
+          errMsg = errText || errMsg;
         }
         
         if (response.status === 401) {
@@ -109,40 +111,34 @@ const AIClient = {
         return null;
       }
 
-      // Parse response
       const data = await response.json();
       console.log('Full API Response:', JSON.stringify(data, null, 2));
 
       // Anthropic format
       if (data.content && Array.isArray(data.content) && data.content[0] && data.content[0].text) {
-        console.log('Format: Anthropic');
         return data.content[0].text;
       }
 
       // OpenAI format
       if (data.choices && Array.isArray(data.choices) && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
-        console.log('Format: OpenAI');
         return data.choices[0].message.content;
       }
 
       // Direct fields
-      if (typeof data.text === 'string') { console.log('Format: text'); return data.text; }
-      if (typeof data.result === 'string') { console.log('Format: result'); return data.result; }
-      if (typeof data.output === 'string') { console.log('Format: output'); return data.output; }
-      if (typeof data.message === 'string') { console.log('Format: message'); return data.message; }
-      if (typeof data.response === 'string') { console.log('Format: response'); return data.response; }
+      if (typeof data.text === 'string') return data.text;
+      if (typeof data.result === 'string') return data.result;
+      if (typeof data.output === 'string') return data.output;
+      if (typeof data.message === 'string') return data.message;
+      if (typeof data.response === 'string') return data.response;
 
       // Nested fields
       if (data.data && (typeof data.data.text === 'string' || typeof data.data.content === 'string')) {
-        console.log('Format: data.*');
         return data.data.text || data.data.content;
       }
       if (data.result && (typeof data.result.text === 'string' || typeof data.result.content === 'string')) {
-        console.log('Format: result.*');
         return data.result.text || data.result.content;
       }
 
-      // No valid response
       console.error('Could not parse API response. Check console for full data.', data);
       Toast.show('Unexpected response format from API. Check console.', 'error');
       return null;
@@ -225,7 +221,9 @@ function getRelevantNoteChunk(notesText, topic, maxChars) {
     var lower = p.toLowerCase();
     var score = 0;
     topicWords.forEach(function(word) {
-      var matches = lower.match(new RegExp(word, 'g'));
+      // FIX: Escape regex chars to prevent syntax errors on medical terms like Na+ or K+
+      var safeWord = word.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+      var matches = lower.match(new RegExp(safeWord, 'g'));
       score += matches ? matches.length : 0;
     });
     return { text: p, score: score };
@@ -413,12 +411,16 @@ const StreakManager = {
   },
   update: function() {
     var streak = this.get();
-    var today = new Date().toISOString().split('T')[0];
+    var today = DateUtils.today(); // FIX: Relies on local timezone logic below
     if (streak.lastDate === today) return streak;
 
     var yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    var yStr = yesterday.toISOString().split('T')[0];
+    
+    // FIX: Using local dates correctly avoids timezone bugs
+    var yStr = yesterday.getFullYear() + '-' + 
+               String(yesterday.getMonth() + 1).padStart(2, '0') + '-' + 
+               String(yesterday.getDate()).padStart(2, '0');
 
     if (streak.lastDate === yStr) {
       streak.count += 1;
@@ -471,7 +473,12 @@ const StudyStats = {
 /* ── Date Helpers ── */
 const DateUtils = {
   today: function() {
-    return new Date().toISOString().split('T')[0];
+    // FIX: Ensure it correctly outputs local timezone date
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
   },
   format: function(dateStr, opts) {
     opts = opts || {};
@@ -515,7 +522,8 @@ function renderMarkdown(text) {
     .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
     .replace(/^\- (.+)$/gm, '<li>$1</li>')
     .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
-    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    // FIX: Prevent greedy regex from wrapping entire documents into a single ul tag
+    .replace(/(?:<li>[\s\S]*?<\/li>\s*)+/g, function(match) { return '<ul>' + match + '</ul>'; })
     .replace(/\n{2,}/g, '</p><p>')
     .replace(/^(?!<[h|u|b|p|l])(.+)$/gm, function(m) { return m.trim() ? m : ''; })
     .replace(/\n/g, '<br>');
@@ -636,8 +644,11 @@ function initApp() {
   document.addEventListener('click', function(e) {
     var menu = document.getElementById('more-menu');
     var moreBtn = document.getElementById('more-btn');
+    
+    // FIX: Using .contains correctly evaluates nested elements so clicking the span icon
+    // doesn't instantly cause the menu to hide upon opening
     if (menu && !menu.classList.contains('hidden') &&
-        !menu.contains(e.target) && e.target !== moreBtn) {
+        !menu.contains(e.target) && (!moreBtn || !moreBtn.contains(e.target))) {
       menu.classList.add('hidden');
     }
   });
